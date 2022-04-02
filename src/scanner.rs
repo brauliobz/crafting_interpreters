@@ -1,17 +1,19 @@
 use crate::error::Error;
 
+type Result<T> = std::result::Result<T, Error>;
+
 pub fn scan_tokens(source_code: &str) -> Vec<Token> {
     todo!()
 }
 
 /// Returns the token, the next position to be read, and the current line
-fn scan_token(src: &str, line: u32) -> Result<(Token, &str, u32), Error> {
+fn scan_token(src: &str, line: u32) -> Result<(Token, &str, u32)> {
     use TokenType::*;
 
     let mut chars = src.chars();
     let char_0 = chars.next();
 
-    if let None = char_0 {
+    if char_0.is_none() {
         return Ok((Token::new(Eof, src, line), src, line));
     }
     let char_0 = char_0.unwrap();
@@ -33,6 +35,8 @@ fn scan_token(src: &str, line: u32) -> Result<(Token, &str, u32), Error> {
         '+' => return single_char_token(Plus),
         ';' => return single_char_token(Semicolon),
         '*' => return single_char_token(Star),
+        ' ' | '\t' | '\r' => return single_char_token(Whitespace), // TODO consume more
+        '\n' => return Ok((Token::new(Whitespace, &src[0..1], line), &src[1..], line + 1)),
         _ => (),
     }
 
@@ -57,33 +61,63 @@ fn scan_token(src: &str, line: u32) -> Result<(Token, &str, u32), Error> {
         _ => (),
     }
     
-    // TODO white spaces (increment line on '\n')
-    // TODO string literals (increment line on '\n')
-    // TODO number literals
-    // TODO identifiers
-    // TODO keywords and fixed literals
+    // string, numbers, keywords, identifiers
+    match char_0 {
+        '"' => return string(src, line),
+        '0'..='9' => return Ok(number(src, line)),
+        'a'..='z' | 'A'..='Z' | '_' => return Ok(identifier_or_keyword(src, line)),
+        _ => (),
+    }
 
-    Err(Error{})
+    Err(Error{}) // TODO proper error
 }
 
 fn comment(src: &str, line: u32) -> (Token, &str, u32) {
+    if let Some(pos) = src.find('\n') {
+        (Token::new(TokenType::Comment, &src[0..(pos + 1)], line), &src[(pos + 1)..], line + 1)
+    } else {
+        // end of file ends the comment
+        (Token::new(TokenType::Comment, src, line), &src[src.len()..], line)
+    }
+}
+
+#[test]
+fn test_comment() {
+    let (token, after, line) = comment("// this is a comment\ntest = 10;", 10);
+    assert_eq!(token, Token::new(TokenType::Comment, "// this is a comment\n", 10));
+    assert_eq!(after, "test = 10;");
+    assert_eq!(line, 11);
+}
+
+#[test]
+fn test_comment_at_line_end() {
+    let (token, after, line) = comment("//\ntest = 10;", 10);
+    assert_eq!(token, Token::new(TokenType::Comment, "//\n", 10));
+    assert_eq!(after, "test = 10;");
+    assert_eq!(line, 11);
+}
+
+#[test]
+fn test_comment_end_of_file() {
+    let (token, after, line) = comment("// this is a comment", 10);
+    assert_eq!(token, Token::new(TokenType::Comment, "// this is a comment", 10));
+    assert_eq!(after, "");
+    assert_eq!(line, 10);
+}
+
+fn string(src: &str, line: u32) -> Result<(Token, &str, u32)> {
     todo!()
 }
 
-fn consume<'code>(
-    source_code: &'code str,
-    pattern: &str, /* TODO allow regex */
-) -> Option<(Token<'code>, &'code str)> {
+fn number(src: &str, line: u32) -> (Token, &str, u32) {
     todo!()
 }
 
-fn peek<'code>(
-    source_code: &'code str,
-    pattern: &str, /* TODO allow regex */
-) -> Option<(Token<'code>, &'code str)> {
+fn identifier_or_keyword(src: &str, line: u32) -> (Token, &str, u32) {
     todo!()
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Token<'source_code> {
     type_: TokenType,
     lexeme: &'source_code str,
@@ -91,6 +125,7 @@ pub struct Token<'source_code> {
     line: u32,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum TokenType {
     // Single-character tokens
     LeftParen,
@@ -116,9 +151,9 @@ pub enum TokenType {
     LessEqual,
 
     // Literals
-    Identifier(String),
-    String(String),
-    Number(f64),
+    Identifier,
+    String,
+    Number,
 
     // Keywords
     And,
@@ -152,3 +187,4 @@ impl<'source_code> Token<'source_code> {
         }
     }
 }
+
