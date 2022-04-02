@@ -93,36 +93,6 @@ fn comment(src: &str, line: u32) -> (Token, &str, u32) {
     }
 }
 
-#[test]
-fn test_comment() {
-    let (token, after, line) = comment("// this is a comment\ntest = 10;", 10);
-    assert_eq!(
-        token,
-        Token::new(TokenType::Comment, "// this is a comment\n", 10)
-    );
-    assert_eq!(after, "test = 10;");
-    assert_eq!(line, 11);
-}
-
-#[test]
-fn test_comment_at_line_end() {
-    let (token, after, line) = comment("//\ntest = 10;", 10);
-    assert_eq!(token, Token::new(TokenType::Comment, "//\n", 10));
-    assert_eq!(after, "test = 10;");
-    assert_eq!(line, 11);
-}
-
-#[test]
-fn test_comment_end_of_file() {
-    let (token, after, line) = comment("// this is a comment", 10);
-    assert_eq!(
-        token,
-        Token::new(TokenType::Comment, "// this is a comment", 10)
-    );
-    assert_eq!(after, "");
-    assert_eq!(line, 10);
-}
-
 fn string(src: &str, line: u32) -> Result<(Token, &str, u32)> {
     let end = src[1..].find('"');
     if let Some(end) = end {
@@ -136,39 +106,6 @@ fn string(src: &str, line: u32) -> Result<(Token, &str, u32)> {
     } else {
         Err(Error::UnterminatedString)
     }
-}
-
-#[test]
-fn test_string() {
-    let result = string(r#""hello, world"; x = 10;"#, 10);
-    assert!(result.is_ok());
-    let (token, after, line) = result.unwrap();
-    assert_eq!(
-        token,
-        Token::new(TokenType::String, r#""hello, world""#, 10)
-    );
-    assert_eq!(after, "; x = 10;");
-    assert_eq!(line, 10);
-}
-
-#[test]
-fn test_string_not_ended() {
-    let result = string(r#""hello, world; x = 10;"#, 10);
-    assert!(result.is_err());
-    assert_eq!(result.unwrap_err(), Error::UnterminatedString);
-}
-
-#[test]
-fn test_multiline_string() {
-    let result = string("\"hello\nworld\"; x = 10;", 10);
-    assert!(result.is_ok());
-    let (token, after, line) = result.unwrap();
-    assert_eq!(
-        token,
-        Token::new(TokenType::String, "\"hello\nworld\"", 10)
-    );
-    assert_eq!(after, "; x = 10;");
-    assert_eq!(line, 11);
 }
 
 fn number(src: &str, line: u32) -> (Token, &str, u32) {
@@ -246,5 +183,130 @@ impl<'source_code> Token<'source_code> {
             lexeme,
             line,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::scanner::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_comment() {
+        let (token, after, line) = comment("// this is a comment\ntest = 10;", 10);
+        assert_eq!(
+            token,
+            Token::new(TokenType::Comment, "// this is a comment\n", 10)
+        );
+        assert_eq!(after, "test = 10;");
+        assert_eq!(line, 11);
+    }
+
+    #[test]
+    fn test_comment_at_line_end() {
+        let (token, after, line) = comment("//\ntest = 10;", 10);
+        assert_eq!(token, Token::new(TokenType::Comment, "//\n", 10));
+        assert_eq!(after, "test = 10;");
+        assert_eq!(line, 11);
+    }
+
+    #[test]
+    fn test_comment_end_of_file() {
+        let (token, after, line) = comment("// this is a comment", 10);
+        assert_eq!(
+            token,
+            Token::new(TokenType::Comment, "// this is a comment", 10)
+        );
+        assert_eq!(after, "");
+        assert_eq!(line, 10);
+    }
+
+    #[test]
+    fn test_string() {
+        let result = string(r#""hello, world"; x = 10;"#, 10);
+        assert!(result.is_ok());
+        let (token, after, line) = result.unwrap();
+        assert_eq!(
+            token,
+            Token::new(TokenType::String, r#""hello, world""#, 10)
+        );
+        assert_eq!(after, "; x = 10;");
+        assert_eq!(line, 10);
+    }
+
+    #[test]
+    fn test_string_not_ended() {
+        let result = string(r#""hello, world; x = 10;"#, 10);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), Error::UnterminatedString);
+    }
+
+    #[test]
+    fn test_multiline_string() {
+        let result = string("\"hello\nworld\"; x = 10;", 10);
+        assert!(result.is_ok());
+        let (token, after, line) = result.unwrap();
+        assert_eq!(token, Token::new(TokenType::String, "\"hello\nworld\"", 10));
+        assert_eq!(after, "; x = 10;");
+        assert_eq!(line, 11);
+    }
+
+    #[test]
+    fn test_number_integer() {
+        let (token, after, line) = number("123; test = 10;", 10);
+        assert_eq!(token, Token::new(TokenType::Number, "123", 10));
+        assert_eq!(after, "; test = 10;");
+        assert_eq!(line, 10);
+    }
+
+    #[test]
+    fn test_number_float() {
+        let (token, after, line) = number("123.321; test = 10;", 10);
+        assert_eq!(token, Token::new(TokenType::Number, "123.321", 10));
+        assert_eq!(after, "; test = 10;");
+        assert_eq!(line, 10);
+    }
+
+    #[test]
+    fn test_number_integer_dot() {
+        let (token, after, line) = number("123.; test = 10;", 10);
+        assert_eq!(token, Token::new(TokenType::Number, "123", 10));
+        assert_eq!(after, ".; test = 10;");
+        assert_eq!(line, 10);
+    }
+
+    #[test]
+    fn test_keywords() {
+        let mut keywords = HashMap::new();
+
+        keywords.insert("and", TokenType::And);
+        keywords.insert("class", TokenType::Class);
+        keywords.insert("else", TokenType::Else);
+        keywords.insert("false", TokenType::False);
+        keywords.insert("for", TokenType::For);
+        keywords.insert("fun", TokenType::Fun);
+        keywords.insert("if", TokenType::If);
+        keywords.insert("nil", TokenType::Nil);
+        keywords.insert("or", TokenType::Or);
+        keywords.insert("print", TokenType::Print);
+        keywords.insert("return", TokenType::Return);
+        keywords.insert("super", TokenType::Super);
+        keywords.insert("this", TokenType::This);
+        keywords.insert("true", TokenType::True);
+        keywords.insert("var", TokenType::Var);
+
+        for (keyword, token_type) in keywords {
+            let src = keyword.to_owned() + "; test = 10;";
+            assert_eq!(
+                identifier_or_keyword(&src, 10),
+                (Token::new(token_type, keyword, 10), "; test = 10;", 10)
+            );
+        }
+    }
+
+    #[test]
+    fn test_identifier() {
+        todo!()
     }
 }
