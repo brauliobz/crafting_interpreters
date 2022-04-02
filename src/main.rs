@@ -2,6 +2,7 @@ mod scanner;
 mod error;
 
 fn main() {
+    scanner::scan_tokens("print \"Hello, world\"");
     todo!()
 }
 

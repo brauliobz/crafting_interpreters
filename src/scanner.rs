@@ -2,11 +2,26 @@ use crate::error::Error;
 
 type Result<T> = std::result::Result<T, Error>;
 
-pub fn scan_tokens(source_code: &str) -> Vec<Token> {
-    todo!()
+pub fn scan_tokens(source_code: &str) -> Result<Vec<Token>> {
+    let mut tokens = Vec::new();
+    let mut src = source_code;
+    let mut line = 1;
+
+    loop {
+        let (token, next_src, next_line) = scan_token(src, line)?;
+        line = next_line;
+        src = next_src;
+        match token.type_ {
+            TokenType::Comment | TokenType::Whitespace => continue,
+            TokenType::Eof => break,
+            _ => tokens.push(token),
+        }
+    }
+    
+    Ok(tokens)
 }
 
-/// Returns the token, the next position to be read, and the current line
+/// Returns the token, the next position to be read, and the current line after the token
 fn scan_token(src: &str, line: u32) -> Result<(Token, &str, u32)> {
     use TokenType::*;
 
@@ -67,13 +82,11 @@ fn scan_token(src: &str, line: u32) -> Result<(Token, &str, u32)> {
 
     // string, numbers, keywords, identifiers
     match char_0 {
-        '"' => return string(src, line),
-        '0'..='9' => return Ok(number(src, line)),
-        'a'..='z' | 'A'..='Z' | '_' => return Ok(identifier_or_keyword(src, line)),
-        _ => (),
+        '"' => string(src, line),
+        '0'..='9' => Ok(number(src, line)),
+        'a'..='z' | 'A'..='Z' | '_' => Ok(identifier_or_keyword(src, line)),
+        _ => Err(Error::UnexpectedCharacter),
     }
-
-    Err(Error::UnexpectedCharacter)
 }
 
 fn comment(src: &str, line: u32) -> (Token, &str, u32) {
