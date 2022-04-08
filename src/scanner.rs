@@ -2,6 +2,66 @@ use crate::error::Error;
 
 type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct Token<'source_code> {
+    type_: TokenType,
+    lexeme: &'source_code str,
+    line: u32,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum TokenType {
+    // Single-character tokens
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    Comma,
+    Dot,
+    Plus,
+    Minus,
+    Semicolon,
+    Slash,
+    Star,
+
+    // One or two character tokens
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+
+    // Literals
+    Identifier,
+    String,
+    Number,
+
+    // Keywords
+    And,
+    Class,
+    Else,
+    False,
+    Fun,
+    For,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
+
+    Comment,
+    Whitespace,
+    Eof,
+}
+
 pub fn scan_tokens(source_code: &str) -> Result<Vec<Token>> {
     let mut tokens = Vec::new();
     let mut src = source_code;
@@ -129,66 +189,6 @@ fn identifier_or_keyword(src: &str, line: u32) -> (Token, &str, u32) {
     todo!()
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Token<'source_code> {
-    type_: TokenType,
-    lexeme: &'source_code str,
-    line: u32,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum TokenType {
-    // Single-character tokens
-    LeftParen,
-    RightParen,
-    LeftBrace,
-    RightBrace,
-    Comma,
-    Dot,
-    Plus,
-    Minus,
-    Semicolon,
-    Slash,
-    Star,
-
-    // One or two character tokens
-    Bang,
-    BangEqual,
-    Equal,
-    EqualEqual,
-    Greater,
-    GreaterEqual,
-    Less,
-    LessEqual,
-
-    // Literals
-    Identifier,
-    String,
-    Number,
-
-    // Keywords
-    And,
-    Class,
-    Else,
-    False,
-    Fun,
-    For,
-    If,
-    Nil,
-    Or,
-    Print,
-    Return,
-    Super,
-    This,
-    True,
-    Var,
-    While,
-
-    Comment,
-    Whitespace,
-    Eof,
-}
-
 impl<'source_code> Token<'source_code> {
     fn new(type_: TokenType, lexeme: &'source_code str, line: u32) -> Self {
         Token {
@@ -200,7 +200,7 @@ impl<'source_code> Token<'source_code> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
 
     use crate::scanner::*;
     use std::collections::HashMap;
@@ -263,6 +263,19 @@ mod test {
         assert_eq!(token, Token::new(TokenType::String, "\"hello\nworld\"", 10));
         assert_eq!(after, "; x = 10;");
         assert_eq!(line, 11);
+    }
+
+    #[test]
+    fn test_unicode_string() {
+        let result = string(r#""hello, Bráulio"; x = 10;"#, 10);
+        assert!(result.is_ok());
+        let (token, after, line) = result.unwrap();
+        assert_eq!(
+            token,
+            Token::new(TokenType::String, r#""hello, Bráulio""#, 10)
+        );
+        assert_eq!(after, "; x = 10;");
+        assert_eq!(line, 10);
     }
 
     #[test]
