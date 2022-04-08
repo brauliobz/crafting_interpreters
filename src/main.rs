@@ -1,5 +1,5 @@
-mod scanner;
 mod error;
+mod scanner;
 
 fn main() {
     scanner::scan_tokens("print \"Hello, world\"");

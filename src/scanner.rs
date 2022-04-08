@@ -81,7 +81,7 @@ pub fn scan_tokens(source_code: &str) -> Result<Vec<Token>> {
             _ => tokens.push(token),
         }
     }
-    
+
     Ok(tokens)
 }
 
@@ -186,7 +186,6 @@ fn string(src: &str, line: u32) -> Result<(Token, &str, u32)> {
 }
 
 fn number(src: &str, line: u32) -> (Token, &str, u32) {
-
     // some possibilities
     // 123<EOF>
     // 123     ;
@@ -202,7 +201,11 @@ fn number(src: &str, line: u32) -> (Token, &str, u32) {
 
     // no dot after integer part
     if end >= bytes.len() || bytes[end] != b'.' {
-        return (Token::new(TokenType::Number, &src[0..end], line), &src[end..], line);
+        return (
+            Token::new(TokenType::Number, &src[0..end], line),
+            &src[end..],
+            line,
+        );
     }
 
     let dot = end;
@@ -214,16 +217,24 @@ fn number(src: &str, line: u32) -> (Token, &str, u32) {
 
     if end == dot + 1 {
         // no numbers after dot
-        return (Token::new(TokenType::Number, &src[0..dot], line), &src[dot..], line);
+        return (
+            Token::new(TokenType::Number, &src[0..dot], line),
+            &src[dot..],
+            line,
+        );
     } else {
         // numbers after dot
-        return (Token::new(TokenType::Number, &src[0..end], line), &src[end..], line);
+        return (
+            Token::new(TokenType::Number, &src[0..end], line),
+            &src[end..],
+            line,
+        );
     }
 }
 
 lazy_static! {
     static ref KEYWORDS: HashMap<&'static str, TokenType> = {
-        
+
         // TODO use perfetch hash
 
         let mut keywords = HashMap::new();
@@ -251,16 +262,24 @@ lazy_static! {
 fn identifier_or_keyword(src: &str, line: u32) -> (Token, &str, u32) {
     // we assume that the first char is alpha or _
     let end = src
-        .find(|c: char| ! (c.is_ascii_alphanumeric() || c == '_'))
+        .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
         .map(|i| i - 1)
         .unwrap_or(src.len() - 1);
-    
+
     let identifier = &src[..=end];
 
     if let Some(keyword) = KEYWORDS.get(identifier) {
-        (Token::new(*keyword, identifier, line), &src[end+1..], line)
+        (
+            Token::new(*keyword, identifier, line),
+            &src[end + 1..],
+            line,
+        )
     } else {
-        (Token::new(TokenType::Identifier, identifier, line), &src[end+1..], line)
+        (
+            Token::new(TokenType::Identifier, identifier, line),
+            &src[end + 1..],
+            line,
+        )
     }
 }
 
