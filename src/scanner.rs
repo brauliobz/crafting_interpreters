@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use lazy_static::lazy_static;
+
 use crate::error::Error;
 
 type Result<T> = std::result::Result<T, Error>;
@@ -9,7 +13,7 @@ pub struct Token<'source_code> {
     line: u32,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TokenType {
     // Single-character tokens
     LeftParen,
@@ -217,8 +221,47 @@ fn number(src: &str, line: u32) -> (Token, &str, u32) {
     }
 }
 
+lazy_static! {
+    static ref KEYWORDS: HashMap<&'static str, TokenType> = {
+        
+        // TODO use perfetch hash
+
+        let mut keywords = HashMap::new();
+
+        keywords.insert("and", TokenType::And);
+        keywords.insert("class", TokenType::Class);
+        keywords.insert("else", TokenType::Else);
+        keywords.insert("false", TokenType::False);
+        keywords.insert("for", TokenType::For);
+        keywords.insert("fun", TokenType::Fun);
+        keywords.insert("if", TokenType::If);
+        keywords.insert("nil", TokenType::Nil);
+        keywords.insert("or", TokenType::Or);
+        keywords.insert("print", TokenType::Print);
+        keywords.insert("return", TokenType::Return);
+        keywords.insert("super", TokenType::Super);
+        keywords.insert("this", TokenType::This);
+        keywords.insert("true", TokenType::True);
+        keywords.insert("var", TokenType::Var);
+
+        keywords
+    };
+}
+
 fn identifier_or_keyword(src: &str, line: u32) -> (Token, &str, u32) {
-    todo!()
+    // we assume that the first char is alpha or _
+    let end = src
+        .find(|c: char| ! (c.is_ascii_alphanumeric() || c == '_'))
+        .map(|i| i - 1)
+        .unwrap_or(src.len() - 1);
+    
+    let identifier = &src[..=end];
+
+    if let Some(keyword) = KEYWORDS.get(identifier) {
+        (Token::new(*keyword, identifier, line), &src[end+1..], line)
+    } else {
+        (Token::new(TokenType::Identifier, identifier, line), &src[end+1..], line)
+    }
 }
 
 impl<'source_code> Token<'source_code> {
