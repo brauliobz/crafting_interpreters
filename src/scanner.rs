@@ -182,7 +182,39 @@ fn string(src: &str, line: u32) -> Result<(Token, &str, u32)> {
 }
 
 fn number(src: &str, line: u32) -> (Token, &str, u32) {
-    todo!()
+
+    // some possibilities
+    // 123<EOF>
+    // 123     ;
+    // 123.    ;
+    // 123.456 ;
+
+    let bytes = src.as_bytes();
+
+    let mut end = 0;
+    while end < bytes.len() && bytes[end].is_ascii_digit() {
+        end += 1;
+    }
+
+    // no dot after integer part
+    if end >= bytes.len() || bytes[end] != b'.' {
+        return (Token::new(TokenType::Number, &src[0..end], line), &src[end..], line);
+    }
+
+    let dot = end;
+    end += 1;
+
+    while end < bytes.len() && bytes[end].is_ascii_digit() {
+        end += 1;
+    }
+
+    if end == dot + 1 {
+        // no numbers after dot
+        return (Token::new(TokenType::Number, &src[0..dot], line), &src[dot..], line);
+    } else {
+        // numbers after dot
+        return (Token::new(TokenType::Number, &src[0..end], line), &src[end..], line);
+    }
 }
 
 fn identifier_or_keyword(src: &str, line: u32) -> (Token, &str, u32) {
