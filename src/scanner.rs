@@ -364,7 +364,42 @@ mod tests {
     }
 
     #[test]
-    fn test_identifier() {
-        todo!()
+    fn test_identifier_start_with_letter() {
+        let (token, rest, line) = identifier_or_keyword("identifier = 10;", 10);
+        assert_eq!(token, Token::new(TokenType::Identifier, "identifier", 10));
+        assert_eq!(line, 10);
+        assert_eq!(rest, " = 10;");
+    }
+
+    #[test]
+    fn test_identifier_start_with_underscore() {
+        let (token, rest, line) = identifier_or_keyword("__identifier = 10;", 10);
+        assert_eq!(token, Token::new(TokenType::Identifier, "__identifier", 10));
+        assert_eq!(line, 10);
+        assert_eq!(rest, " = 10;");
+    }
+
+    #[test]
+    fn test_identifier_start_with_uppercase() {
+        let (token, rest, line) = identifier_or_keyword("MyIdentifier = 10;", 10);
+        assert_eq!(token, Token::new(TokenType::Identifier, "MyIdentifier", 10));
+        assert_eq!(line, 10);
+        assert_eq!(rest, " = 10;");
+    }
+
+    #[test]
+    fn test_identifier_with_number() {
+        let (token, rest, line) = identifier_or_keyword("identifier20 = 10;", 10);
+        assert_eq!(token, Token::new(TokenType::Identifier, "identifier20", 10));
+        assert_eq!(line, 10);
+        assert_eq!(rest, " = 10;");
+    }
+
+    #[test]
+    fn test_identifier_with_keyword_prefix() {
+        let (token, rest, line) = identifier_or_keyword("class_ = 10;", 10);
+        assert_eq!(token, Token::new(TokenType::Identifier, "class_", 10));
+        assert_eq!(line, 10);
+        assert_eq!(rest, " = 10;");
     }
 }
