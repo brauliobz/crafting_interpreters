@@ -235,7 +235,7 @@ fn number(src: &str, line: u32) -> (Token, &str, u32) {
 lazy_static! {
     static ref KEYWORDS: HashMap<&'static str, TokenType> = {
 
-        // TODO use perfetch hash
+        // TODO use perfect hash
 
         let mut keywords = HashMap::new();
 
