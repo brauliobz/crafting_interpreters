@@ -1,18 +1,6 @@
 use std::io::Write;
 
-mod error;
-
-#[cfg(feature = "scanner_clike")]
-#[path = "./scanner.rs"]
-mod scanner;
-#[cfg(feature = "scanner_rusty")]
-#[path = "./alt/scanner_rusty.rs"]
-mod scanner;
-#[cfg(feature = "scanner_logos")]
-#[path = "./alt/scanner_logos.rs"]
-mod scanner;
-
-pub type Result<T> = std::result::Result<T, error::Error>;
+use rlox::{Result, scanner};
 
 fn main() -> Result<()> {
     let mut args = std::env::args();
