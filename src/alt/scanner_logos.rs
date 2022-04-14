@@ -138,65 +138,11 @@ pub fn scan_tokens(src: &str) -> Result<Vec<Token>> {
 }
 
 impl<'source_code> Token<'source_code> {
-    fn new(type_: TokenType, lexeme: &'source_code str, line: u32) -> Self {
+    pub fn new(type_: TokenType, lexeme: &'source_code str, line: u32) -> Self {
         Token {
             type_,
             lexeme,
             line,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::scanner::*;
-
-    #[test]
-    fn test_scan_tokens_hello_world() {
-        let src = r##"print "Hello, World";"##;
-        let result = scan_tokens(src);
-
-        assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap(),
-            vec![
-                Token::new(TokenType::Print, "print", 1),
-                Token::new(TokenType::String, "\"Hello, World\"", 1),
-                Token::new(TokenType::Semicolon, ";", 1),
-            ]
-        );
-    }
-
-    #[test]
-    fn test_scan_tokens_newline() {
-        let src = r##"print
-            "Hello, World";"##;
-        let result = scan_tokens(src);
-
-        assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap(),
-            vec![
-                Token::new(TokenType::Print, "print", 1),
-                Token::new(TokenType::String, "\"Hello, World\"", 2),
-                Token::new(TokenType::Semicolon, ";", 2),
-            ]
-        );
-    }
-
-    #[test]
-    fn test_scan_tokens_newline_bug() {
-        let src = r##"1 + 1"##;
-        let result = scan_tokens(src);
-
-        assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap(),
-            vec![
-                Token::new(TokenType::Number, "1", 1),
-                Token::new(TokenType::Plus, "+", 1),
-                Token::new(TokenType::Number, "1", 1),
-            ]
-        );
     }
 }
