@@ -96,7 +96,7 @@ pub enum TokenType {
     #[token("while")]
     While,
 
-    #[regex("//[^\n]", logos::skip)]
+    #[regex("//[^\n]*", logos::skip)]
     Comment,
     #[regex("[ \t\r]+", logos::skip)]
     Whitespace,
