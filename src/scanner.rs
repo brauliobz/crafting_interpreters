@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
-use crate::error::Error;
-
-type Result<T> = std::result::Result<T, Error>;
+use crate::{error::Error, Result};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Token<'source_code> {
@@ -346,7 +344,6 @@ mod tests {
     fn test_string_not_ended() {
         let result = string(r#""hello, world; x = 10;"#, 10);
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), Error::UnterminatedString);
     }
 
     #[test]
@@ -494,6 +491,22 @@ mod tests {
                 Token::new(TokenType::Print, "print", 1),
                 Token::new(TokenType::String, "\"Hello, World\"", 2),
                 Token::new(TokenType::Semicolon, ";", 2),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_scan_tokens_newline_bug() {
+        let src = r##"1 + 1"##;
+        let result = scan_tokens(src);
+
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            vec![
+                Token::new(TokenType::Number, "1", 1),
+                Token::new(TokenType::Plus, "+", 1),
+                Token::new(TokenType::Number, "1", 1),
             ]
         );
     }
