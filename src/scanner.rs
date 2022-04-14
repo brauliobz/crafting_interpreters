@@ -252,6 +252,7 @@ lazy_static! {
         keywords.insert("this", TokenType::This);
         keywords.insert("true", TokenType::True);
         keywords.insert("var", TokenType::Var);
+        keywords.insert("while", TokenType::While);
 
         keywords
     };
@@ -412,6 +413,7 @@ mod tests {
         keywords.insert("this", TokenType::This);
         keywords.insert("true", TokenType::True);
         keywords.insert("var", TokenType::Var);
+        keywords.insert("while", TokenType::While);
 
         for (keyword, token_type) in keywords {
             let src = keyword.to_owned() + "; test = 10;";
