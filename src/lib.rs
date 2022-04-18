@@ -9,4 +9,6 @@ pub mod scanner;
 #[path = "./alt/scanner_logos.rs"]
 pub mod scanner;
 
+pub mod ast;
+
 pub type Result<T> = std::result::Result<T, error::Error>;
