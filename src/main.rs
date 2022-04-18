@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use rlox::{Result, scanner};
+use rlox::{Result, scanner, parser};
 
 fn main() -> Result<()> {
     let mut args = std::env::args();
@@ -43,6 +43,8 @@ fn run_prompt() -> Result<()> {
 
 fn run(src: &str) -> Result<()> {
     let tokens = scanner::scan_tokens(src)?;
-    println!("{:?}", tokens);
+    let ast = parser::parse_expr(&tokens);
+    println!("tokens: {:?}", tokens);
+    println!("ast: {:?}", ast);
     Ok(())
 }

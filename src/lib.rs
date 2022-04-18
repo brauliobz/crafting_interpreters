@@ -10,5 +10,6 @@ pub mod scanner;
 pub mod scanner;
 
 pub mod ast;
+pub mod parser;
 
 pub type Result<T> = std::result::Result<T, error::Error>;
