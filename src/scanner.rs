@@ -6,9 +6,9 @@ use crate::{error::Error, Result};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Token<'source_code> {
-    type_: TokenType,
-    lexeme: &'source_code str,
-    line: u32,
+    pub type_: TokenType,
+    pub lexeme: &'source_code str,
+    pub line: u32,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
