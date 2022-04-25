@@ -11,5 +11,7 @@ pub mod scanner;
 
 pub mod ast;
 pub mod parser;
+pub mod memory;
+pub mod interpreter;
 
 pub type Result<T> = std::result::Result<T, error::Error>;
