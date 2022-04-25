@@ -129,7 +129,7 @@ impl<'tokens> Parser<'tokens> {
             let lexeme = self.previous().lexeme;
             let string = lexeme[1..(lexeme.len() - 1)].into(); // remove the ""
             Expr::Literal(LiteralExpr::String(string))
-        } else if self.matches(Number) {
+        } else if self.matches(NumberLiteral) {
             let result = self.previous().lexeme.parse::<f64>();
             match result {
                 Ok(number) => Expr::Literal(LiteralExpr::Number(number)),

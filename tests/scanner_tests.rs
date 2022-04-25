@@ -42,9 +42,9 @@ fn test_scan_tokens_newline_bug() {
     assert_eq!(
         result.unwrap(),
         vec![
-            Token::new(TokenType::Number, "1", 1),
+            Token::new(TokenType::NumberLiteral, "1", 1),
             Token::new(TokenType::Plus, "+", 1),
-            Token::new(TokenType::Number, "1", 1),
+            Token::new(TokenType::NumberLiteral, "1", 1),
         ]
     );
 }
@@ -87,7 +87,7 @@ fn test_all_tokens() {
             Token::new(TokenType::LessEqual, "<=", 3),
             Token::new(TokenType::Identifier, "identifier", 4),
             Token::new(TokenType::String, "\"string\"", 4),
-            Token::new(TokenType::Number, "12345.123", 4),
+            Token::new(TokenType::NumberLiteral, "12345.123", 4),
             Token::new(TokenType::And, "and", 5),
             Token::new(TokenType::Class, "class", 5),
             Token::new(TokenType::Else, "else", 5),

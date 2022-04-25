@@ -60,7 +60,7 @@ pub enum TokenType {
     #[regex("\"[^\"]*\"")]
     String,
     #[regex("[0-9]+(\\.[0-9]+)?")]
-    Number,
+    NumberLiteral,
 
     // Keywords
     #[token("and")]

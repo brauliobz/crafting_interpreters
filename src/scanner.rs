@@ -39,7 +39,7 @@ pub enum TokenType {
     // Literals
     Identifier,
     String,
-    Number,
+    NumberLiteral,
 
     // Keywords
     And,
@@ -200,7 +200,7 @@ fn number(src: &str, line: u32) -> (Token, &str, u32) {
     // no dot after integer part
     if end >= bytes.len() || bytes[end] != b'.' {
         return (
-            Token::new(TokenType::Number, &src[0..end], line),
+            Token::new(TokenType::NumberLiteral, &src[0..end], line),
             &src[end..],
             line,
         );
@@ -216,14 +216,14 @@ fn number(src: &str, line: u32) -> (Token, &str, u32) {
     if end == dot + 1 {
         // no numbers after dot
         return (
-            Token::new(TokenType::Number, &src[0..dot], line),
+            Token::new(TokenType::NumberLiteral, &src[0..dot], line),
             &src[dot..],
             line,
         );
     } else {
         // numbers after dot
         return (
-            Token::new(TokenType::Number, &src[0..end], line),
+            Token::new(TokenType::NumberLiteral, &src[0..end], line),
             &src[end..],
             line,
         );
@@ -373,7 +373,7 @@ mod tests {
     #[test]
     fn test_number_integer() {
         let (token, after, line) = number("123; test = 10;", 10);
-        assert_eq!(token, Token::new(TokenType::Number, "123", 10));
+        assert_eq!(token, Token::new(TokenType::NumberLiteral, "123", 10));
         assert_eq!(after, "; test = 10;");
         assert_eq!(line, 10);
     }
@@ -381,7 +381,7 @@ mod tests {
     #[test]
     fn test_number_float() {
         let (token, after, line) = number("123.321; test = 10;", 10);
-        assert_eq!(token, Token::new(TokenType::Number, "123.321", 10));
+        assert_eq!(token, Token::new(TokenType::NumberLiteral, "123.321", 10));
         assert_eq!(after, "; test = 10;");
         assert_eq!(line, 10);
     }
@@ -389,7 +389,7 @@ mod tests {
     #[test]
     fn test_number_integer_dot() {
         let (token, after, line) = number("123.; test = 10;", 10);
-        assert_eq!(token, Token::new(TokenType::Number, "123", 10));
+        assert_eq!(token, Token::new(TokenType::NumberLiteral, "123", 10));
         assert_eq!(after, ".; test = 10;");
         assert_eq!(line, 10);
     }
