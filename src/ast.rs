@@ -2,7 +2,7 @@ use crate::scanner::TokenType;
 
 pub struct Ast;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expr {
     Identifier(String),
     Literal(LiteralExpr),
@@ -11,7 +11,7 @@ pub enum Expr {
     Grouping(Box<Expr>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LiteralExpr {
     Number(f64),
     String(String),
@@ -19,13 +19,13 @@ pub enum LiteralExpr {
     Nil,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct UnaryExpr {
     pub op: TokenType,
     pub expr: Box<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct BinaryExpr {
     pub left: Box<Expr>,
     pub op: TokenType,
