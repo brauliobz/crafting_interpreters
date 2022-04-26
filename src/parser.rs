@@ -43,9 +43,24 @@ impl<'tokens> Parser<'tokens> {
     }
 
     fn equality_expr(&mut self) -> Expr {
-        let mut expr = self.comparison_expr();
+        let mut expr = self.boolean_expr();
 
         while self.matches(EqualEqual) || self.matches(BangEqual) {
+            let op = self.previous();
+            expr = Expr::Binary(BinaryExpr {
+                left: Box::new(expr),
+                op: op.type_,
+                right: Box::new(self.boolean_expr()),
+            });
+        }
+
+        expr
+    }
+
+    fn boolean_expr(&mut self) -> Expr {
+        let mut expr = self.comparison_expr();
+
+        while self.matches(And) || self.matches(Or) {
             let op = self.previous();
             expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
