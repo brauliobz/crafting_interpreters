@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
-use crate::{error::Error, Result};
+use crate::{error::LoxError, Result};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Token<'source_code> {
@@ -147,7 +147,7 @@ fn scan_token(src: &str, line: u32) -> Result<(Token, &str, u32)> {
         '"' => string(src, line),
         '0'..='9' => Ok(number(src, line)),
         'a'..='z' | 'A'..='Z' | '_' => Ok(identifier_or_keyword(src, line)),
-        _ => Err(Error::UnexpectedCharacter),
+        _ => Err(LoxError::UnexpectedCharacter),
     }
 }
 
@@ -179,7 +179,7 @@ fn string(src: &str, line: u32) -> Result<(Token, &str, u32)> {
             line + new_lines as u32,
         ))
     } else {
-        Err(Error::UnterminatedString)
+        Err(LoxError::UnterminatedString)
     }
 }
 

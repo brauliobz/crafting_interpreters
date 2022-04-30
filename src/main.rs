@@ -25,7 +25,7 @@ fn run_prompt(interpreter: &Interpreter) -> Result<()> {
 
     loop {
         print!("> ");
-        std::io::stdout().lock().flush();
+        std::io::stdout().lock().flush()?;
 
         src.clear();
         match std::io::stdin().read_line(&mut src) {

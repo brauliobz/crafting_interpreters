@@ -14,4 +14,4 @@ pub mod parser;
 pub mod memory;
 pub mod interpreter;
 
-pub type Result<T> = std::result::Result<T, error::Error>;
+pub type Result<T> = std::result::Result<T, error::LoxError>;
