@@ -345,6 +345,7 @@ mod tests {
     fn test_string_not_ended() {
         let result = string(r#""hello, world; x = 10;"#, 10);
         assert!(result.is_err());
+        assert!(if let LoxError::UnterminatedString = result.unwrap_err() { true } else { false });
     }
 
     #[test]
