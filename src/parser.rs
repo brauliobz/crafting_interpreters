@@ -10,7 +10,7 @@ pub struct Parser<'tokens> {
 
 pub fn parse(tokens: &Vec<Token>) -> Vec<Statement> {
     let mut parser = Parser::new(tokens);
-    parser.statements()
+    parser.declarations()
 }
 
 pub fn parse_expr(tokens: &Vec<Token>) -> Expr {
@@ -64,14 +64,34 @@ impl<'tokens> Parser<'tokens> {
         )
     }
 
-    fn statements(&mut self) -> Vec<Statement> {
-        let mut statements = Vec::new();
+    fn declarations(&mut self) -> Vec<Statement> {
+        let mut decls = Vec::new();
 
         while !self.is_at_end() {
-            statements.push(self.statement());
+            if self.matches(Var) {
+                decls.push(self.var_declaration())
+            } else {
+                decls.push(self.statement())
+            }
         }
 
-        statements
+        decls
+    }
+
+    fn var_declaration(&mut self) -> Statement {
+        let name = self
+            .consume_or_error(Identifier, "Expected a variable name")
+            .lexeme
+            .into();
+
+        let mut initializer = None;
+        if self.matches(Equal) {
+            initializer = Some(self.expr());
+        }
+
+        self.consume_or_error(Semicolon, "Expected ';' after variable declaration.");
+
+        Statement::VariableDecl(name, initializer)
     }
 
     fn statement(&mut self) -> Statement {
