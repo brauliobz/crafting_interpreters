@@ -1,13 +1,13 @@
 use std::io::Write;
 
-use rlox::{Result, scanner, parser, interpreter::{self, Interpreter}};
+use rlox::{interpreter::Interpreter, parser, scanner, Result};
 
 fn main() -> Result<()> {
     let mut args = std::env::args();
-    let interpreter = Interpreter::new();
+    let mut interpreter = Interpreter::new();
     match args.len() {
-        1 => run_prompt(&interpreter),
-        2 => run_file(args.nth(1).unwrap().as_str(), &interpreter),
+        1 => run_prompt(&mut interpreter),
+        2 => run_file(args.nth(1).unwrap().as_str(), &mut interpreter),
         _ => {
             println!("Usage: rlox [script]");
             std::process::exit(64);
@@ -15,17 +15,17 @@ fn main() -> Result<()> {
     }
 }
 
-fn run_file(filename: &str, interpreter: &Interpreter) -> Result<()> {
+fn run_file(filename: &str, interpreter: &mut Interpreter) -> Result<()> {
     let src = std::fs::read_to_string(filename).expect("Could not read file");
     run(src.as_str(), interpreter)
 }
 
-fn run_prompt(interpreter: &Interpreter) -> Result<()> {
+fn run_prompt(interpreter: &mut Interpreter) -> Result<()> {
     let mut src = String::new();
 
     loop {
         print!("> ");
-        std::io::stdout().lock().flush()?;
+        std::io::stdout().flush()?;
 
         src.clear();
         match std::io::stdin().read_line(&mut src) {
@@ -42,15 +42,16 @@ fn run_prompt(interpreter: &Interpreter) -> Result<()> {
     }
 }
 
-fn run(src: &str, interpreter: &Interpreter) -> Result<()> {
+fn run(src: &str, interpreter: &mut Interpreter) -> Result<()> {
     let tokens = scanner::scan_tokens(src)?;
     println!("tokens: {:?}", tokens);
-    
-    let ast = parser::parse_expr(&tokens);
-    println!("ast: {:?}", ast);
-    
-    let result = interpreter.calc_expr(&ast);
-    println!("result: {:?}", result);
+
+    let statements = parser::parse_statements(&tokens);
+    println!("ast: {:?}", statements);
+
+    for stmt in statements {
+        interpreter.exec_stmt(&stmt);
+    }
 
     Ok(())
 }

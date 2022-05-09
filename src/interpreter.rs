@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, LiteralExpr},
+    ast::{Expr, LiteralExpr, Statement},
     memory::{Memory, Value},
     scanner::TokenType,
 };
@@ -15,6 +15,13 @@ impl Interpreter {
         }
     }
 
+    pub fn exec_stmt(&mut self, stmt: &Statement) -> Value {
+        match stmt {
+            Statement::Expr(expr) => self.calc_expr(expr),
+            Statement::Print(expr) => self.print_stmt(expr),
+        }
+    }
+
     pub fn calc_expr(&self, expr: &Expr) -> Value {
         match expr {
             Expr::Literal(lit) => calc_lit(lit),
@@ -23,6 +30,12 @@ impl Interpreter {
             Expr::Binary(bin) => self.calc_binary(bin.left.as_ref(), bin.op, bin.right.as_ref()),
             Expr::Grouping(expr) => self.calc_expr(expr.as_ref()),
         }
+    }
+
+    pub fn print_stmt(&self, expr: &Expr) -> Value {
+        let value = self.calc_expr(expr);
+        println!("{}", value);
+        Value::Nil
     }
 
     fn calc_identifier(&self, id: &str) -> Value {
