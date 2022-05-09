@@ -23,6 +23,7 @@ impl <'output> Interpreter<'output> {
         match stmt {
             Statement::Expr(expr) => self.calc_expr(expr),
             Statement::Print(expr) => self.print_stmt(expr),
+            Statement::VariableDecl(name, value) => todo!(),
         }
     }
 

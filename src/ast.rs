@@ -9,6 +9,7 @@ pub struct Program {
 pub enum Statement {
     Expr(Expr),
     Print(Expr),
+    VariableDecl(String, Option<Expr>),
 }
 
 #[derive(Debug, PartialEq)]
