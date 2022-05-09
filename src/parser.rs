@@ -33,15 +33,19 @@ impl<'tokens> Parser<'tokens> {
         false
     }
 
-    fn consume(&mut self, token_type: TokenType) {
+    fn consume(&mut self, token_type: TokenType) -> &Token {
         if !self.matches(token_type) {
             panic!("Expected {:?}", token_type); // FIXME do not panic
+        } else {
+            self.previous()
         }
     }
 
-    fn consume_or_error(&mut self, token_type: TokenType, error_msg: &str) {
+    fn consume_or_error(&mut self, token_type: TokenType, error_msg: &str) -> &Token {
         if !self.matches(token_type) {
             panic!("{}", error_msg); // FIXME do not panic
+        } else {
+            self.previous()
         }
     }
 
