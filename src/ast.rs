@@ -1,6 +1,15 @@
 use crate::scanner::TokenType;
 
-pub struct Ast;
+#[derive(Debug, PartialEq)]
+pub struct Program {
+    statements: Vec<Statement>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Statement {
+    Expr(Expr),
+    Print(Expr),
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Expr {
