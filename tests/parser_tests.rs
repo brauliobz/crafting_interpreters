@@ -29,3 +29,27 @@ fn test_subtraction() {
         })
     );
 }
+
+#[test]
+fn test_print() {
+    let result = parser::parse_statements(&scanner::scan_tokens("print 10;").unwrap());
+    assert_eq!(
+        result,
+        vec![Statement::Print(Expr::Literal(LiteralExpr::Number(10.0)))]
+    );
+}
+
+#[test]
+fn test_print_with_expr() {
+    let result = parser::parse_statements(&scanner::scan_tokens("print 10 + 11;").unwrap());
+    assert_eq!(
+        result,
+        vec![Statement::Print(
+            Expr::Binary(BinaryExpr{
+                left: Box::new(Expr::Literal(LiteralExpr::Number(10.0))),
+                op: Plus,
+                right: Box::new(Expr::Literal(LiteralExpr::Number(11.0)))
+            })
+        )]
+    );
+}
