@@ -8,6 +8,11 @@ pub struct Parser<'tokens> {
     next: usize,
 }
 
+pub fn parse_statements(tokens: &Vec<Token>) -> Vec<Statement> {
+    let mut parser = Parser::new(tokens);
+    parser.statements()
+}
+
 pub fn parse_expr(tokens: &Vec<Token>) -> Expr {
     let mut parser = Parser::new(tokens);
     parser.equality_expr()
@@ -34,12 +39,59 @@ impl<'tokens> Parser<'tokens> {
         }
     }
 
+    fn consume_or_error(&mut self, token_type: TokenType, error_msg: &str) {
+        if !self.matches(token_type) {
+            panic!("{}", error_msg); // FIXME do not panic
+        }
+    }
+
     fn previous(&self) -> &Token {
         if let Some(token) = self.tokens.get(self.next - 1) {
             token
         } else {
             panic!("Could not get previous token")
         }
+    }
+
+    fn is_at_end(&self) -> bool {
+        matches!(
+            self.tokens.get(self.next),
+            Some(&Token { type_: Eof, .. }) | None
+        )
+    }
+
+    fn statements(&mut self) -> Vec<Statement> {
+        let mut statements = Vec::new();
+
+        while !self.is_at_end() {
+            statements.push(self.statement());
+        }
+
+        statements
+    }
+
+    fn statement(&mut self) -> Statement {
+        if self.matches(Print) {
+            self.print_stmt()
+        } else {
+            self.expr_stmt()
+        }
+    }
+
+    fn print_stmt(&mut self) -> Statement {
+        let value = self.expr();
+        self.consume_or_error(Semicolon, "Expected ';' after value.");
+        Statement::Print(value)
+    }
+
+    fn expr_stmt(&mut self) -> Statement {
+        let expr = self.expr();
+        self.consume_or_error(Semicolon, "Expected ';' after expression.");
+        Statement::Expr(expr)
+    }
+
+    fn expr(&mut self) -> Expr {
+        self.equality_expr()
     }
 
     fn equality_expr(&mut self) -> Expr {
