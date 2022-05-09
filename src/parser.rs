@@ -8,7 +8,7 @@ pub struct Parser<'tokens> {
     next: usize,
 }
 
-pub fn parse_statements(tokens: &Vec<Token>) -> Vec<Statement> {
+pub fn parse(tokens: &Vec<Token>) -> Vec<Statement> {
     let mut parser = Parser::new(tokens);
     parser.statements()
 }

@@ -32,7 +32,7 @@ fn test_subtraction() {
 
 #[test]
 fn test_print() {
-    let result = parser::parse_statements(&scanner::scan_tokens("print 10;").unwrap());
+    let result = parser::parse(&scanner::scan_tokens("print 10;").unwrap());
     assert_eq!(
         result,
         vec![Statement::Print(Expr::Literal(LiteralExpr::Number(10.0)))]
@@ -41,7 +41,7 @@ fn test_print() {
 
 #[test]
 fn test_print_with_expr() {
-    let result = parser::parse_statements(&scanner::scan_tokens("print 10 + 11;").unwrap());
+    let result = parser::parse(&scanner::scan_tokens("print 10 + 11;").unwrap());
     assert_eq!(
         result,
         vec![Statement::Print(

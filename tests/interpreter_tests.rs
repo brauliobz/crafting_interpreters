@@ -2,7 +2,7 @@ use rlox::{ast::Statement, interpreter::Interpreter, parser, scanner};
 
 fn parse_stmts(src: &str) -> Vec<Statement> {
     let tokens = scanner::scan_tokens(src).unwrap();
-    parser::parse_statements(&tokens)
+    parser::parse(&tokens)
 }
 
 
