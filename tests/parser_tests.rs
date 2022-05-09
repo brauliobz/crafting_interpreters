@@ -4,6 +4,10 @@ use rlox::{
     scanner::{self, TokenType::*},
 };
 
+fn parse(src: &str) -> Vec<Statement> {
+    parser::parse(&scanner::scan_tokens(src).unwrap())
+}
+
 #[test]
 fn test_sum() {
     let result = parser::parse_expr(&scanner::scan_tokens("1 + 1").unwrap());
