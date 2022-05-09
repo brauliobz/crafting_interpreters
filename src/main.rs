@@ -4,7 +4,8 @@ use rlox::{interpreter::Interpreter, parser, scanner, Result};
 
 fn main() -> Result<()> {
     let mut args = std::env::args();
-    let mut interpreter = Interpreter::new();
+    let stdout = &mut std::io::stdout();
+    let mut interpreter = Interpreter::new(stdout);
     match args.len() {
         1 => run_prompt(&mut interpreter),
         2 => run_file(args.nth(1).unwrap().as_str(), &mut interpreter),

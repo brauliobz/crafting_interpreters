@@ -1,17 +1,21 @@
+use std::io::Write;
+
 use crate::{
     ast::{Expr, LiteralExpr, Statement},
     memory::{Memory, Value},
     scanner::TokenType,
 };
 
-pub struct Interpreter {
+pub struct Interpreter<'stdout> {
     memory: Memory,
+    stdout: &'stdout mut dyn Write,
 }
 
-impl Interpreter {
-    pub fn new() -> Self {
+impl <'output> Interpreter<'output> {
+    pub fn new(stdout: &'output mut dyn Write) -> Self {
         Interpreter {
             memory: Memory::new(),
+            stdout,
         }
     }
 
@@ -32,9 +36,10 @@ impl Interpreter {
         }
     }
 
-    pub fn print_stmt(&self, expr: &Expr) -> Value {
+    pub fn print_stmt(&mut self, expr: &Expr) -> Value {
         let value = self.calc_expr(expr);
-        println!("{}", value);
+        let output = format!("{}", value);
+        self.stdout.write_all(output.as_bytes()).expect("I/O error"); // TODO deal with it
         Value::Nil
     }
 
