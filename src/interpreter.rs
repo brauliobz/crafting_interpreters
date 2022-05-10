@@ -2,19 +2,19 @@ use std::io::Write;
 
 use crate::{
     ast::{Expr, LiteralExpr, Statement},
-    memory::{Memory, Value},
+    environment::{Environment, Value},
     scanner::TokenType,
 };
 
 pub struct Interpreter<'stdout> {
-    memory: Memory,
+    memory: Environment,
     stdout: &'stdout mut dyn Write,
 }
 
 impl <'output> Interpreter<'output> {
     pub fn new(stdout: &'output mut dyn Write) -> Self {
         Interpreter {
-            memory: Memory::new(),
+            memory: Environment::new(),
             stdout,
         }
     }

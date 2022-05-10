@@ -6,18 +6,28 @@ pub enum Value {
     Boolean(bool),
     Number(f64),
     String(String),
-    Object
+    Object,
 }
 
-pub struct Memory {
+pub struct Environment {
     pub values: HashMap<String, Value>,
 }
 
-impl Memory {
+impl Environment {
     pub fn new() -> Self {
-        Memory {
+        Environment {
             values: HashMap::new(),
         }
+    }
+
+    pub fn define(&mut self, name: &str, value: Value) {
+        self.values.insert(name.into(), value);
+    }
+
+    pub fn get(&self, name: &str) -> &Value {
+        self.values
+            .get(name)
+            .unwrap_or_else(|| panic!("Undefined variable '{}'.", name))
     }
 }
 
