@@ -33,6 +33,10 @@ impl<'tokens> Parser<'tokens> {
         false
     }
 
+    fn check(&self, token_type: TokenType) -> bool {
+        matches!(self.tokens.get(self.next), Some(Token { type_, ..}) if *type_ == token_type)
+    }
+
     fn consume(&mut self, token_type: TokenType) -> &Token {
         if !self.matches(token_type) {
             panic!("Expected {:?}", token_type); // FIXME do not panic
@@ -68,14 +72,18 @@ impl<'tokens> Parser<'tokens> {
         let mut decls = Vec::new();
 
         while !self.is_at_end() {
-            if self.matches(Var) {
-                decls.push(self.var_declaration())
-            } else {
-                decls.push(self.statement())
-            }
+            decls.push(self.declaration());
         }
 
         decls
+    }
+
+    fn declaration(&mut self) -> Statement {
+        if self.matches(Var) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        }
     }
 
     fn var_declaration(&mut self) -> Statement {
@@ -97,6 +105,8 @@ impl<'tokens> Parser<'tokens> {
     fn statement(&mut self) -> Statement {
         if self.matches(Print) {
             self.print_stmt()
+        } else if self.matches(LeftBrace) {
+            self.block_stmt()
         } else {
             self.expr_stmt()
         }
@@ -112,6 +122,18 @@ impl<'tokens> Parser<'tokens> {
         let expr = self.expr();
         self.consume_or_error(Semicolon, "Expected ';' after expression.");
         Statement::Expr(expr)
+    }
+
+    fn block_stmt(&mut self) -> Statement {
+        let mut statements = Vec::new();
+
+        while !self.check(RightBrace) && !self.is_at_end() {
+            statements.push(self.declaration());
+        }
+
+        self.consume_or_error(RightBrace, "Expected '}' after block.");
+
+        Statement::Block(statements)
     }
 
     fn expr(&mut self) -> Expr {

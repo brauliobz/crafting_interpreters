@@ -9,6 +9,7 @@ pub enum Value {
     Object,
 }
 
+#[derive(Debug)]
 pub struct Environment {
     values: HashMap<String, Value>,
 }
@@ -24,17 +25,12 @@ impl Environment {
         self.values.insert(name.into(), value);
     }
 
-    pub fn get(&self, name: &str) -> &Value {
-        self.values
-            .get(name)
-            .unwrap_or_else(|| panic!("Undefined variable '{}'.", name))
+    pub fn get(&self, name: &str) -> Option<&Value> {
+        self.values.get(name)
     }
 
-    pub fn assign(&mut self, name: &str, new_value: Value) {
-        match self.values.get_mut(name) {
-            Some(value) => *value = new_value,
-            None => panic!("Undefined variable '{}'.", name),
-        }
+    pub fn get_mut(&mut self, name: &str) -> Option<&mut Value> {
+        self.values.get_mut(name)
     }
 }
 

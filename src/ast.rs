@@ -10,6 +10,7 @@ pub enum Statement {
     Expr(Expr),
     Print(Expr),
     VariableDecl(String, Option<Expr>),
+    Block(Vec<Statement>),
 }
 
 #[derive(Debug, PartialEq)]

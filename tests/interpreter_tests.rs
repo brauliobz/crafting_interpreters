@@ -6,7 +6,7 @@ fn parse_stmts(src: &str) -> Vec<Statement> {
 }
 
 /// executes the program and returns the generated output
-fn exec_stmts(src: &str) -> Vec<u8> {
+fn exec_stmts(src: &str) -> String {
     let statements = parse_stmts(src);
     let mut out = Vec::new();
     let mut int = Interpreter::new(&mut out);
@@ -15,7 +15,7 @@ fn exec_stmts(src: &str) -> Vec<u8> {
         int.exec_stmt(&stmt);
     }
 
-    out
+    String::from_utf8(out).unwrap()
 }
 
 #[test]
@@ -26,25 +26,25 @@ fn test_expr_stmt() {
         2 + 2;
     "#,
     );
-    assert_eq!(out, b"");
+    assert_eq!(out, "");
 }
 
 #[test]
 fn test_print() {
     let out = exec_stmts(r#" print "Hello, World!"; "#);
-    assert_eq!(out, b"Hello, World!");
+    assert_eq!(out, "Hello, World!");
 }
 
 #[test]
 fn test_print_expr() {
     let out = exec_stmts("print 10 + 10;");
-    assert_eq!(out, b"20");
+    assert_eq!(out, "20");
 }
 
 #[test]
 fn test_various_prints() {
     let out = exec_stmts(r#"print "Hello, "; print "World!";"#);
-    assert_eq!(out, b"Hello, World!");
+    assert_eq!(out, "Hello, World!");
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn test_var_decl() {
         print a;
     "#,
     );
-    assert_eq!(out, b"10");
+    assert_eq!(out, "10");
 }
 
 #[test]
@@ -66,7 +66,7 @@ fn test_var_decl_no_initializer() {
         print a;
     "#,
     );
-    assert_eq!(out, b"Nil");
+    assert_eq!(out, "Nil");
 }
 
 #[test]
@@ -78,7 +78,7 @@ fn test_var_redeclaration() {
         print a;
     "#,
     );
-    assert_eq!(out, b"true");
+    assert_eq!(out, "true");
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn test_assignment() {
         print a;
     "#,
     );
-    assert_eq!(out, b"false");
+    assert_eq!(out, "false");
 }
 
 #[test]
@@ -119,5 +119,63 @@ fn test_assignment_of_assignment() {
         print a;
     "#,
     );
-    assert_eq!(out, b"10");
+    assert_eq!(out, "10");
+}
+
+#[test]
+fn test_block_execution() {
+    let out = exec_stmts(r#"
+        {
+            print "Hello, ";
+            print "World!";
+        }
+    "#);
+
+    assert_eq!(
+        out,
+        "Hello, World!"
+    )
+}
+
+#[test]
+fn test_shadowing() {
+    assert_eq!(
+        exec_stmts(r#"
+            var a = "World!";
+            {
+                var a = "Hello, ";
+                print a;
+            }
+            print a;
+        "#),
+        "Hello, World!"
+    );
+}
+
+#[test]
+fn test_variable_access_from_outer_scope() {
+    assert_eq!(
+        exec_stmts(r#"
+            var a = 10;
+            {
+                print a;
+            }
+        "#),
+        "10"
+    );
+}
+
+#[test]
+fn test_variable_access_from_outer_outer_scope() {
+    assert_eq!(
+        exec_stmts(r#"
+            var a = 10;
+            {
+                {
+                    print a;
+                }
+            }
+        "#),
+        "10"
+    );
 }

@@ -87,3 +87,28 @@ fn test_assignment_of_expression() {
 fn test_assignment_invalid_lvalue() {
     parse("10 = a;");
 }
+
+#[test]
+fn test_empty_block() {
+    assert_eq!(parse("{}"), vec![Statement::Block(vec![])]);
+}
+
+#[test]
+fn test_nonempty_block() {
+    assert_eq!(
+        parse("{ var a = 10; a = 1; }"),
+        vec![Statement::Block(vec![
+            Statement::VariableDecl("a".into(), Some(Expr::Literal(LiteralExpr::Number(10.0)))),
+            Statement::Expr(Expr::Assignment(
+                "a".into(),
+                Box::new(Expr::Literal(LiteralExpr::Number(1.0)))
+            ))
+        ])]
+    );
+}
+
+#[test]
+#[should_panic]
+fn test_unfinished_block() {
+    parse("{ a = 10; ");
+}

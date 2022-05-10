@@ -7,14 +7,14 @@ use crate::{
 };
 
 pub struct Interpreter<'stdout> {
-    env: Environment,
+    envs: Vec<Environment>,
     stdout: &'stdout mut dyn Write,
 }
 
 impl<'output> Interpreter<'output> {
     pub fn new(stdout: &'output mut dyn Write) -> Self {
         Interpreter {
-            env: Environment::new(),
+            envs: vec![Environment::new()],
             stdout,
         }
     }
@@ -24,6 +24,7 @@ impl<'output> Interpreter<'output> {
             Statement::Expr(expr) => self.calc_expr(expr),
             Statement::Print(expr) => self.print_stmt(expr),
             Statement::VariableDecl(name, value) => self.var_decl(name, value),
+            Statement::Block(statements) => self.exec_block(statements),
         }
     }
 
@@ -45,8 +46,25 @@ impl<'output> Interpreter<'output> {
         Value::Nil
     }
 
-    fn calc_identifier(&self, id: &str) -> Value {
-        self.env.get(id).clone()
+    fn get_curr_env_mut(&mut self) -> &mut Environment {
+        self.envs.last_mut().expect("Stack underflow")
+    }
+
+    fn push_new_env(&mut self) {
+        self.envs.push(Environment::new());
+    }
+
+    fn pop_env(&mut self) {
+        self.envs.pop();
+    }
+
+    fn calc_identifier(&mut self, id: &str) -> Value {
+        self.envs
+            .iter()
+            .rev()
+            .find_map(|env| env.get(id))
+            .cloned()
+            .unwrap_or_else(|| panic!("Undefined variable '{}'.", id))
     }
 
     fn calc_unary(&mut self, op: TokenType, expr: &Expr) -> Value {
@@ -101,14 +119,39 @@ impl<'output> Interpreter<'output> {
         let value = expr
             .as_ref()
             .map_or(Value::Nil, |expr| self.calc_expr(expr));
-        self.env.define(name, value);
+
+        self.get_curr_env_mut().define(name, value);
+
         Value::Nil
     }
 
     fn calc_assignment(&mut self, var_name: &str, rvalue: &Expr) -> Value {
         let value = self.calc_expr(rvalue);
-        self.env.assign(var_name, value.clone());
+
+        self.assign(var_name, value.clone());
+
         value
+    }
+
+    fn assign(&mut self, name: &str, new_value: Value) {
+        let old_value = self.envs.iter_mut().rev().find_map(|env| env.get_mut(name));
+
+        match old_value {
+            Some(value) => *value = new_value,
+            None => panic!("Undefined variable '{}'.", name),
+        }
+    }
+
+    fn exec_block(&mut self, statements: &[Statement]) -> Value {
+        self.push_new_env();
+
+        for stmt in statements {
+            self.exec_stmt(stmt);
+        }
+
+        self.pop_env();
+
+        Value::Nil
     }
 }
 
