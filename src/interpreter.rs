@@ -27,13 +27,14 @@ impl<'output> Interpreter<'output> {
         }
     }
 
-    pub fn calc_expr(&self, expr: &Expr) -> Value {
+    pub fn calc_expr(&mut self, expr: &Expr) -> Value {
         match expr {
             Expr::Literal(lit) => calc_lit(lit),
             Expr::Identifier(id) => self.calc_identifier(id),
             Expr::Unary(unary) => self.calc_unary(unary.op, unary.expr.as_ref()),
             Expr::Binary(bin) => self.calc_binary(bin.left.as_ref(), bin.op, bin.right.as_ref()),
             Expr::Grouping(expr) => self.calc_expr(expr.as_ref()),
+            Expr::Assignment(var_name, rvalue) => self.calc_assignment(var_name, rvalue),
         }
     }
 
@@ -48,7 +49,7 @@ impl<'output> Interpreter<'output> {
         self.env.get(id).clone()
     }
 
-    fn calc_unary(&self, op: TokenType, expr: &Expr) -> Value {
+    fn calc_unary(&mut self, op: TokenType, expr: &Expr) -> Value {
         match op {
             TokenType::Minus => match self.calc_expr(expr) {
                 Value::Number(n) => Value::Number(-n),
@@ -62,7 +63,7 @@ impl<'output> Interpreter<'output> {
         }
     }
 
-    fn calc_binary(&self, left: &Expr, op: TokenType, right: &Expr) -> Value {
+    fn calc_binary(&mut self, left: &Expr, op: TokenType, right: &Expr) -> Value {
         use TokenType::*;
         use Value::*;
 
@@ -102,6 +103,12 @@ impl<'output> Interpreter<'output> {
             .map_or(Value::Nil, |expr| self.calc_expr(expr));
         self.env.define(name, value);
         Value::Nil
+    }
+
+    fn calc_assignment(&mut self, var_name: &str, rvalue: &Expr) -> Value {
+        let value = self.calc_expr(rvalue);
+        self.env.assign(var_name, value.clone());
+        value
     }
 }
 

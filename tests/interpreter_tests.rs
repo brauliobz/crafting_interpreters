@@ -86,3 +86,38 @@ fn test_var_redeclaration() {
 fn test_undefined_var_use() {
     exec_stmts("print a;");
 }
+
+#[test]
+fn test_assignment() {
+    let out = exec_stmts(
+        r#"
+        var a = 100;
+        a = false;
+        print a;
+    "#,
+    );
+    assert_eq!(out, b"false");
+}
+
+#[test]
+#[should_panic]
+fn test_assignment_of_undefined_var() {
+    exec_stmts(
+        r#"
+        a = 10;
+    "#,
+    );
+}
+
+#[test]
+fn test_assignment_of_assignment() {
+    let out = exec_stmts(
+        r#"
+        var a;
+        var b;
+        a = b = 10;
+        print a;
+    "#,
+    );
+    assert_eq!(out, b"10");
+}

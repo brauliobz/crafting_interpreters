@@ -48,12 +48,42 @@ fn test_print_with_expr() {
     let result = parser::parse(&scanner::scan_tokens("print 10 + 11;").unwrap());
     assert_eq!(
         result,
-        vec![Statement::Print(
-            Expr::Binary(BinaryExpr{
+        vec![Statement::Print(Expr::Binary(BinaryExpr {
+            left: Box::new(Expr::Literal(LiteralExpr::Number(10.0))),
+            op: Plus,
+            right: Box::new(Expr::Literal(LiteralExpr::Number(11.0)))
+        }))]
+    );
+}
+
+#[test]
+fn test_assignment() {
+    assert_eq!(
+        parse("a = 10;"),
+        vec![Statement::Expr(Expr::Assignment(
+            "a".into(),
+            Box::new(Expr::Literal(LiteralExpr::Number(10.0)))
+        ))]
+    );
+}
+
+#[test]
+fn test_assignment_of_expression() {
+    assert_eq!(
+        parse("a = 10 + 11;"),
+        vec![Statement::Expr(Expr::Assignment(
+            "a".into(),
+            Box::new(Expr::Binary(BinaryExpr {
                 left: Box::new(Expr::Literal(LiteralExpr::Number(10.0))),
                 op: Plus,
                 right: Box::new(Expr::Literal(LiteralExpr::Number(11.0)))
-            })
-        )]
+            }))
+        ))]
     );
+}
+
+#[test]
+#[should_panic]
+fn test_assignment_invalid_lvalue() {
+    parse("10 = a;");
 }

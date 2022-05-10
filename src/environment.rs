@@ -29,6 +29,13 @@ impl Environment {
             .get(name)
             .unwrap_or_else(|| panic!("Undefined variable '{}'.", name))
     }
+
+    pub fn assign(&mut self, name: &str, new_value: Value) {
+        match self.values.get_mut(name) {
+            Some(value) => *value = new_value,
+            None => panic!("Undefined variable '{}'.", name),
+        }
+    }
 }
 
 impl Display for Value {

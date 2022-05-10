@@ -115,7 +115,23 @@ impl<'tokens> Parser<'tokens> {
     }
 
     fn expr(&mut self) -> Expr {
-        self.equality_expr()
+        self.assignment_expr()
+    }
+
+    fn assignment_expr(&mut self) -> Expr {
+        let expr = self.equality_expr();
+
+        if self.matches(Equal) {
+            match expr {
+                Expr::Identifier(ref name) => {
+                    let rvalue = self.assignment_expr();
+                    return Expr::Assignment(name.clone(), Box::new(rvalue));
+                }
+                _ => panic!("Invalid assignment target {:?}", expr),
+            }
+        }
+
+        expr
     }
 
     fn equality_expr(&mut self) -> Expr {

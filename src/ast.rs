@@ -19,6 +19,7 @@ pub enum Expr {
     Unary(UnaryExpr),
     Binary(BinaryExpr),
     Grouping(Box<Expr>),
+    Assignment(String, Box<Expr>)
 }
 
 #[derive(Debug, PartialEq)]
