@@ -10,7 +10,7 @@ pub enum Value {
 }
 
 pub struct Environment {
-    pub values: HashMap<String, Value>,
+    values: HashMap<String, Value>,
 }
 
 impl Environment {

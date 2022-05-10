@@ -7,14 +7,14 @@ use crate::{
 };
 
 pub struct Interpreter<'stdout> {
-    memory: Environment,
+    env: Environment,
     stdout: &'stdout mut dyn Write,
 }
 
-impl <'output> Interpreter<'output> {
+impl<'output> Interpreter<'output> {
     pub fn new(stdout: &'output mut dyn Write) -> Self {
         Interpreter {
-            memory: Environment::new(),
+            env: Environment::new(),
             stdout,
         }
     }
@@ -23,7 +23,7 @@ impl <'output> Interpreter<'output> {
         match stmt {
             Statement::Expr(expr) => self.calc_expr(expr),
             Statement::Print(expr) => self.print_stmt(expr),
-            Statement::VariableDecl(name, value) => todo!(),
+            Statement::VariableDecl(name, value) => self.var_decl(name, value),
         }
     }
 
@@ -45,11 +45,7 @@ impl <'output> Interpreter<'output> {
     }
 
     fn calc_identifier(&self, id: &str) -> Value {
-        if let Some(value) = self.memory.values.get(id) {
-            value.clone()
-        } else {
-            Value::Nil
-        }
+        self.env.get(id).clone()
     }
 
     fn calc_unary(&self, op: TokenType, expr: &Expr) -> Value {
@@ -98,6 +94,14 @@ impl <'output> Interpreter<'output> {
                 op, left, right
             ), // TODO do not panic
         }
+    }
+
+    fn var_decl(&mut self, name: &str, expr: &Option<Expr>) -> Value {
+        let value = expr
+            .as_ref()
+            .map_or(Value::Nil, |expr| self.calc_expr(expr));
+        self.env.define(name, value);
+        Value::Nil
     }
 }
 
