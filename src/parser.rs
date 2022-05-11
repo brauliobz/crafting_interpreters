@@ -1,6 +1,8 @@
 use crate::{
     ast::*,
+    error::{compilation_error, CompilationError, Error, ice, ICE},
     scanner::{Token, TokenType, TokenType::*},
+    Result,
 };
 
 pub struct Parser<'tokens> {
@@ -8,12 +10,12 @@ pub struct Parser<'tokens> {
     next: usize,
 }
 
-pub fn parse(tokens: &Vec<Token>) -> Vec<Statement> {
+pub fn parse(tokens: &Vec<Token>) -> Result<Vec<Statement>> {
     let mut parser = Parser::new(tokens);
     parser.declarations()
 }
 
-pub fn parse_expr(tokens: &Vec<Token>) -> Expr {
+pub fn parse_expr(tokens: &Vec<Token>) -> Result<Expr> {
     let mut parser = Parser::new(tokens);
     parser.equality_expr()
 }
@@ -37,27 +39,39 @@ impl<'tokens> Parser<'tokens> {
         matches!(self.tokens.get(self.next), Some(Token { type_, ..}) if *type_ == token_type)
     }
 
-    fn consume(&mut self, token_type: TokenType) -> &Token {
-        if !self.matches(token_type) {
-            panic!("Expected {:?}", token_type); // FIXME do not panic
+    fn consume(&mut self, token_type: TokenType) -> Result<&Token> {
+        if self.is_at_end() {
+            Err(compilation_error(CompilationError::ExpectedToken(
+                format!("{:?}", token_type),
+                "Eof".into(),
+            )))
+        } else if !self.matches(token_type) {
+            Err(compilation_error(CompilationError::ExpectedToken(
+                format!("{:?}", token_type),
+                self.peek().unwrap().into(),
+            )))
         } else {
             self.previous()
         }
     }
 
-    fn consume_or_error(&mut self, token_type: TokenType, error_msg: &str) -> &Token {
+    fn consume_or_error(&mut self, token_type: TokenType, error: Error) -> Result<&Token> {
         if !self.matches(token_type) {
-            panic!("{}", error_msg); // FIXME do not panic
+            Err(error)
         } else {
             self.previous()
         }
     }
 
-    fn previous(&self) -> &Token {
+    fn peek(&self) -> Option<&Token> {
+        self.tokens.get(self.next)
+    }
+
+    fn previous(&self) -> Result<&Token> {
         if let Some(token) = self.tokens.get(self.next - 1) {
-            token
+            Ok(token)
         } else {
-            panic!("Could not get previous token")
+            Err(ice(ICE::Generic("Could not get previous token".into())))
         }
     }
 
@@ -68,17 +82,17 @@ impl<'tokens> Parser<'tokens> {
         )
     }
 
-    fn declarations(&mut self) -> Vec<Statement> {
+    fn declarations(&mut self) -> Result<Vec<Statement>> {
         let mut decls = Vec::new();
 
         while !self.is_at_end() {
-            decls.push(self.declaration());
+            decls.push(self.declaration()?);
         }
 
-        decls
+        Ok(decls)
     }
 
-    fn declaration(&mut self) -> Statement {
+    fn declaration(&mut self) -> Result<Statement> {
         if self.matches(Var) {
             self.var_declaration()
         } else {
@@ -86,23 +100,29 @@ impl<'tokens> Parser<'tokens> {
         }
     }
 
-    fn var_declaration(&mut self) -> Statement {
+    fn var_declaration(&mut self) -> Result<Statement> {
         let name = self
-            .consume_or_error(Identifier, "Expected a variable name")
+            .consume_or_error(
+                Identifier,
+                compilation_error(CompilationError::ExpectedNameAfterVar),
+            )?
             .lexeme
             .into();
 
         let mut initializer = None;
         if self.matches(Equal) {
-            initializer = Some(self.expr());
+            initializer = Some(self.expr()?);
         }
 
-        self.consume_or_error(Semicolon, "Expected ';' after variable declaration.");
+        self.consume_or_error(
+            Semicolon,
+            compilation_error(CompilationError::ExpectedSemicolonAfterVarDecl),
+        )?;
 
-        Statement::VariableDecl(name, initializer)
+        Ok(Statement::VariableDecl(name, initializer))
     }
 
-    fn statement(&mut self) -> Statement {
+    fn statement(&mut self) -> Result<Statement> {
         if self.matches(Print) {
             self.print_stmt()
         } else if self.matches(LeftBrace) {
@@ -112,166 +132,189 @@ impl<'tokens> Parser<'tokens> {
         }
     }
 
-    fn print_stmt(&mut self) -> Statement {
-        let value = self.expr();
-        self.consume_or_error(Semicolon, "Expected ';' after value.");
-        Statement::Print(value)
+    fn print_stmt(&mut self) -> Result<Statement> {
+        let value = self.expr()?;
+        self.consume_or_error(
+            Semicolon,
+            compilation_error(CompilationError::GenericError(
+                "Expected ';' after value.".into(),
+            )),
+        )?; // TODO create specific error
+        Ok(Statement::Print(value))
     }
 
-    fn expr_stmt(&mut self) -> Statement {
-        let expr = self.expr();
-        self.consume_or_error(Semicolon, "Expected ';' after expression.");
-        Statement::Expr(expr)
+    fn expr_stmt(&mut self) -> Result<Statement> {
+        let expr = self.expr()?;
+        self.consume_or_error(
+            Semicolon,
+            compilation_error(CompilationError::GenericError(
+                "Expected ';' after expression.".into(),
+            )),
+        )?; // TODO create specific error
+        Ok(Statement::Expr(expr))
     }
 
-    fn block_stmt(&mut self) -> Statement {
+    fn block_stmt(&mut self) -> Result<Statement> {
         let mut statements = Vec::new();
 
         while !self.check(RightBrace) && !self.is_at_end() {
-            statements.push(self.declaration());
+            statements.push(self.declaration()?);
         }
 
-        self.consume_or_error(RightBrace, "Expected '}' after block.");
+        self.consume_or_error(
+            RightBrace,
+            compilation_error(CompilationError::GenericError(
+                "Expected '}' at end of block.".into(),
+            )),
+        )?; // TODO create specific error
 
-        Statement::Block(statements)
+        Ok(Statement::Block(statements))
     }
 
-    fn expr(&mut self) -> Expr {
+    fn expr(&mut self) -> Result<Expr> {
         self.assignment_expr()
     }
 
-    fn assignment_expr(&mut self) -> Expr {
-        let expr = self.equality_expr();
+    fn assignment_expr(&mut self) -> Result<Expr> {
+        let expr = self.equality_expr()?;
 
         if self.matches(Equal) {
             match expr {
                 Expr::Identifier(ref name) => {
-                    let rvalue = self.assignment_expr();
-                    return Expr::Assignment(name.clone(), Box::new(rvalue));
+                    let rvalue = self.assignment_expr()?;
+                    return Ok(Expr::Assignment(name.clone(), Box::new(rvalue)));
                 }
-                _ => panic!("Invalid assignment target {:?}", expr),
+                _ => {
+                    return Err(compilation_error(CompilationError::GenericError(format!(
+                        "Invalid assignment target {:?}",
+                        expr
+                    ))))
+                } // TODO create specific error
             }
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn equality_expr(&mut self) -> Expr {
-        let mut expr = self.boolean_expr();
+    fn equality_expr(&mut self) -> Result<Expr> {
+        let mut expr = self.boolean_expr()?;
 
         while self.matches(EqualEqual) || self.matches(BangEqual) {
-            let op = self.previous();
+            let op = self.previous()?;
             expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
                 op: op.type_,
-                right: Box::new(self.boolean_expr()),
+                right: Box::new(self.boolean_expr()?),
             });
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn boolean_expr(&mut self) -> Expr {
-        let mut expr = self.comparison_expr();
+    fn boolean_expr(&mut self) -> Result<Expr> {
+        let mut expr = self.comparison_expr()?;
 
         while self.matches(And) || self.matches(Or) {
-            let op = self.previous();
+            let op = self.previous()?;
             expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
                 op: op.type_,
-                right: Box::new(self.comparison_expr()),
+                right: Box::new(self.comparison_expr()?),
             });
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn comparison_expr(&mut self) -> Expr {
-        let mut expr = self.term_expr();
+    fn comparison_expr(&mut self) -> Result<Expr> {
+        let mut expr = self.term_expr()?;
 
         while self.matches(Greater)
             || self.matches(GreaterEqual)
             || self.matches(Less)
             || self.matches(LessEqual)
         {
-            let op = self.previous();
+            let op = self.previous()?;
             expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
                 op: op.type_,
-                right: Box::new(self.term_expr()),
+                right: Box::new(self.term_expr()?),
             });
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn term_expr(&mut self) -> Expr {
-        let mut expr = self.factor_expr();
+    fn term_expr(&mut self) -> Result<Expr> {
+        let mut expr = self.factor_expr()?;
 
         while self.matches(Plus) || self.matches(Minus) {
-            let op = self.previous();
+            let op = self.previous()?;
             expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
                 op: op.type_,
-                right: Box::new(self.factor_expr()),
+                right: Box::new(self.factor_expr()?),
             });
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn factor_expr(&mut self) -> Expr {
-        let mut expr = self.unary_expr();
+    fn factor_expr(&mut self) -> Result<Expr> {
+        let mut expr = self.unary_expr()?;
 
         while self.matches(Star) || self.matches(Slash) {
-            let op = self.previous();
+            let op = self.previous()?;
             expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
                 op: op.type_,
-                right: Box::new(self.unary_expr()),
+                right: Box::new(self.unary_expr()?),
             });
         }
 
-        expr
+        Ok(expr)
     }
 
-    fn unary_expr(&mut self) -> Expr {
+    fn unary_expr(&mut self) -> Result<Expr> {
         if self.matches(Bang) || self.matches(Minus) {
-            let op = self.previous().type_;
-            Expr::Unary(UnaryExpr {
+            let op = self.previous()?.type_;
+            Ok(Expr::Unary(UnaryExpr {
                 op,
-                expr: Box::new(self.unary_expr()),
-            })
+                expr: Box::new(self.unary_expr()?),
+            }))
         } else {
             self.primary_expr()
         }
     }
 
-    fn primary_expr(&mut self) -> Expr {
+    fn primary_expr(&mut self) -> Result<Expr> {
         if self.matches(False) {
-            Expr::Literal(LiteralExpr::Boolean(false))
+            Ok(Expr::Literal(LiteralExpr::Boolean(false)))
         } else if self.matches(True) {
-            Expr::Literal(LiteralExpr::Boolean(true))
+            Ok(Expr::Literal(LiteralExpr::Boolean(true)))
         } else if self.matches(Nil) {
-            Expr::Literal(LiteralExpr::Nil)
+            Ok(Expr::Literal(LiteralExpr::Nil))
         } else if self.matches(String) {
-            let lexeme = self.previous().lexeme;
+            let lexeme = self.previous()?.lexeme;
             let string = lexeme[1..(lexeme.len() - 1)].into(); // remove the ""
-            Expr::Literal(LiteralExpr::String(string))
+            Ok(Expr::Literal(LiteralExpr::String(string)))
         } else if self.matches(NumberLiteral) {
-            let result = self.previous().lexeme.parse::<f64>();
+            let result = self.previous()?.lexeme.parse::<f64>();
             match result {
-                Ok(number) => Expr::Literal(LiteralExpr::Number(number)),
-                Err(_) => todo!(),
+                Ok(number) => Ok(Expr::Literal(LiteralExpr::Number(number))),
+                Err(_) => Err(compilation_error(CompilationError::InvalidLiteral(
+                    "number".into(),
+                    self.previous()?.lexeme.into(),
+                ))),
             }
         } else if self.matches(Identifier) {
-            Expr::Identifier(self.previous().lexeme.into())
+            Ok(Expr::Identifier(self.previous()?.lexeme.into()))
         } else if self.matches(LeftParen) {
-            let expr = self.equality_expr();
-            self.consume(RightParen);
-            Expr::Grouping(Box::new(expr))
+            let expr = self.equality_expr()?;
+            self.consume(RightParen)?;
+            Ok(Expr::Grouping(Box::new(expr)))
         } else {
-            todo!()
+            todo!() // TODO generate error
         }
     }
 }

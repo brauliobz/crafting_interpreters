@@ -2,41 +2,42 @@ use rlox::{
     ast::*,
     parser,
     scanner::{self, TokenType::*},
+    Result,
 };
 
-fn parse(src: &str) -> Vec<Statement> {
+fn parse(src: &str) -> Result<Vec<Statement>> {
     parser::parse(&scanner::scan_tokens(src).unwrap())
 }
 
 #[test]
 fn test_sum() {
-    let result = parser::parse_expr(&scanner::scan_tokens("1 + 1").unwrap());
+    let result = parse("1 + 1;").unwrap();
     assert_eq!(
         result,
-        Expr::Binary(BinaryExpr {
+        vec![Statement::Expr(Expr::Binary(BinaryExpr {
             left: Box::new(Expr::Literal(LiteralExpr::Number(1.0))),
             op: Plus,
             right: Box::new(Expr::Literal(LiteralExpr::Number(1.0)))
-        })
+        }))]
     );
 }
 
 #[test]
 fn test_subtraction() {
-    let result = parser::parse_expr(&scanner::scan_tokens("1 - 1").unwrap());
+    let result = parse("1 - 1;").unwrap();
     assert_eq!(
         result,
-        Expr::Binary(BinaryExpr {
+        vec![Statement::Expr(Expr::Binary(BinaryExpr {
             left: Box::new(Expr::Literal(LiteralExpr::Number(1.0))),
             op: Minus,
             right: Box::new(Expr::Literal(LiteralExpr::Number(1.0)))
-        })
+        }))]
     );
 }
 
 #[test]
 fn test_print() {
-    let result = parser::parse(&scanner::scan_tokens("print 10;").unwrap());
+    let result = parse("print 10;").unwrap();
     assert_eq!(
         result,
         vec![Statement::Print(Expr::Literal(LiteralExpr::Number(10.0)))]
@@ -45,7 +46,7 @@ fn test_print() {
 
 #[test]
 fn test_print_with_expr() {
-    let result = parser::parse(&scanner::scan_tokens("print 10 + 11;").unwrap());
+    let result = parse("print 10 + 11;").unwrap();
     assert_eq!(
         result,
         vec![Statement::Print(Expr::Binary(BinaryExpr {
@@ -59,7 +60,7 @@ fn test_print_with_expr() {
 #[test]
 fn test_assignment() {
     assert_eq!(
-        parse("a = 10;"),
+        parse("a = 10;").unwrap(),
         vec![Statement::Expr(Expr::Assignment(
             "a".into(),
             Box::new(Expr::Literal(LiteralExpr::Number(10.0)))
@@ -70,7 +71,7 @@ fn test_assignment() {
 #[test]
 fn test_assignment_of_expression() {
     assert_eq!(
-        parse("a = 10 + 11;"),
+        parse("a = 10 + 11;").unwrap(),
         vec![Statement::Expr(Expr::Assignment(
             "a".into(),
             Box::new(Expr::Binary(BinaryExpr {
@@ -83,20 +84,19 @@ fn test_assignment_of_expression() {
 }
 
 #[test]
-#[should_panic]
 fn test_assignment_invalid_lvalue() {
-    parse("10 = a;");
+    assert!(parse("10 = a;").is_err());
 }
 
 #[test]
 fn test_empty_block() {
-    assert_eq!(parse("{}"), vec![Statement::Block(vec![])]);
+    assert_eq!(parse("{}").unwrap(), vec![Statement::Block(vec![])]);
 }
 
 #[test]
 fn test_nonempty_block() {
     assert_eq!(
-        parse("{ var a = 10; a = 1; }"),
+        parse("{ var a = 10; a = 1; }").unwrap(),
         vec![Statement::Block(vec![
             Statement::VariableDecl("a".into(), Some(Expr::Literal(LiteralExpr::Number(10.0)))),
             Statement::Expr(Expr::Assignment(
@@ -108,7 +108,6 @@ fn test_nonempty_block() {
 }
 
 #[test]
-#[should_panic]
 fn test_unfinished_block() {
-    parse("{ a = 10; ");
+    assert!(parse("{ a = 10; ").is_err());
 }

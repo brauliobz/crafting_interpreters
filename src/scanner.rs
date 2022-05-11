@@ -1,8 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use lazy_static::lazy_static;
 
-use crate::{error::LoxError, Result};
+use crate::{
+    error::{compilation_error, CompilationError},
+    Result,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Token<'source_code> {
@@ -147,7 +150,9 @@ fn scan_token(src: &str, line: u32) -> Result<(Token, &str, u32)> {
         '"' => string(src, line),
         '0'..='9' => Ok(number(src, line)),
         'a'..='z' | 'A'..='Z' | '_' => Ok(identifier_or_keyword(src, line)),
-        _ => Err(LoxError::UnexpectedCharacter),
+        other => Err(compilation_error(CompilationError::UnexpectedCharacter(
+            other,
+        ))),
     }
 }
 
@@ -179,7 +184,7 @@ fn string(src: &str, line: u32) -> Result<(Token, &str, u32)> {
             line + new_lines as u32,
         ))
     } else {
-        Err(LoxError::UnterminatedString)
+        Err(compilation_error(CompilationError::UnterminatedString))
     }
 }
 
@@ -292,10 +297,22 @@ impl<'source_code> Token<'source_code> {
     }
 }
 
+impl Display for Token<'_> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(fmt, "{}", self.lexeme)
+    }
+}
+
+impl <'a> From<&Token<'a>> for String {
+    fn from(t: &Token) -> Self {
+        format!("{}", t)
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
-    use crate::scanner::*;
+    use crate::{error::Error, scanner::*};
     use std::collections::HashMap;
 
     #[test]
@@ -345,7 +362,10 @@ mod tests {
     fn test_string_not_ended() {
         let result = string(r#""hello, world; x = 10;"#, 10);
         assert!(result.is_err());
-        assert!(if let LoxError::UnterminatedString = result.unwrap_err() { true } else { false });
+        assert!(matches!(
+            result.unwrap_err(),
+            Error::CompilationError(CompilationError::UnterminatedString)
+        ));
     }
 
     #[test]

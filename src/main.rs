@@ -40,6 +40,7 @@ fn run_prompt(interpreter: &mut Interpreter) -> Result<()> {
             // TODO show error if return is not Ok
             Err(_) => panic!("Input error"),
         }
+        println!();
     }
 }
 
@@ -47,11 +48,11 @@ fn run(src: &str, interpreter: &mut Interpreter) -> Result<()> {
     let tokens = scanner::scan_tokens(src)?;
     println!("tokens: {:?}", tokens);
 
-    let statements = parser::parse(&tokens);
+    let statements = parser::parse(&tokens)?;
     println!("ast: {:?}", statements);
 
     for stmt in statements {
-        interpreter.exec_stmt(&stmt);
+        interpreter.exec_stmt(&stmt)?;
     }
 
     Ok(())

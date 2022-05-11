@@ -3,7 +3,9 @@ use std::io::Write;
 use crate::{
     ast::{Expr, LiteralExpr, Statement},
     environment::{Environment, Value},
+    error::{ice, runtime_error, RuntimeError, ICE},
     scanner::TokenType,
+    Result,
 };
 
 pub struct Interpreter<'stdout> {
@@ -19,7 +21,7 @@ impl<'output> Interpreter<'output> {
         }
     }
 
-    pub fn exec_stmt(&mut self, stmt: &Statement) -> Value {
+    pub fn exec_stmt(&mut self, stmt: &Statement) -> Result<Value> {
         match stmt {
             Statement::Expr(expr) => self.calc_expr(expr),
             Statement::Print(expr) => self.print_stmt(expr),
@@ -28,9 +30,9 @@ impl<'output> Interpreter<'output> {
         }
     }
 
-    pub fn calc_expr(&mut self, expr: &Expr) -> Value {
+    pub fn calc_expr(&mut self, expr: &Expr) -> Result<Value> {
         match expr {
-            Expr::Literal(lit) => calc_lit(lit),
+            Expr::Literal(lit) => Ok(calc_lit(lit)),
             Expr::Identifier(id) => self.calc_identifier(id),
             Expr::Unary(unary) => self.calc_unary(unary.op, unary.expr.as_ref()),
             Expr::Binary(bin) => self.calc_binary(bin.left.as_ref(), bin.op, bin.right.as_ref()),
@@ -39,11 +41,11 @@ impl<'output> Interpreter<'output> {
         }
     }
 
-    pub fn print_stmt(&mut self, expr: &Expr) -> Value {
-        let value = self.calc_expr(expr);
+    pub fn print_stmt(&mut self, expr: &Expr) -> Result<Value> {
+        let value = self.calc_expr(expr)?;
         let output = format!("{}", value);
-        self.stdout.write_all(output.as_bytes()).expect("I/O error"); // TODO deal with it
-        Value::Nil
+        self.stdout.write_all(output.as_bytes())?;
+        Ok(Value::Nil)
     }
 
     fn get_curr_env_mut(&mut self) -> &mut Environment {
@@ -58,100 +60,117 @@ impl<'output> Interpreter<'output> {
         self.envs.pop();
     }
 
-    fn calc_identifier(&mut self, id: &str) -> Value {
+    fn calc_identifier(&mut self, id: &str) -> Result<Value> {
         self.envs
             .iter()
             .rev()
             .find_map(|env| env.get(id))
             .cloned()
-            .unwrap_or_else(|| panic!("Undefined variable '{}'.", id))
+            .ok_or_else(|| runtime_error(RuntimeError::UndefinedVariable(id.into())))
     }
 
-    fn calc_unary(&mut self, op: TokenType, expr: &Expr) -> Value {
+    fn calc_unary(&mut self, op: TokenType, expr: &Expr) -> Result<Value> {
         match op {
-            TokenType::Minus => match self.calc_expr(expr) {
-                Value::Number(n) => Value::Number(-n),
-                other => panic!("Expected number for unary minus, but got {:?}", other), // TODO do not panic
+            TokenType::Minus => match self.calc_expr(expr)? {
+                Value::Number(n) => Ok(Value::Number(-n)),
+                other => Err(runtime_error(RuntimeError::TypeMismatch(
+                    "number".into(),
+                    format!("{}", other),
+                ))),
             },
-            TokenType::Bang => match self.calc_expr(expr) {
-                Value::Boolean(b) => Value::Boolean(!b),
-                other => panic!("Expected boolean for unary not, but got {:?}", other), // TODO do not panic
+            TokenType::Bang => match self.calc_expr(expr)? {
+                Value::Boolean(b) => Ok(Value::Boolean(!b)),
+                other => Err(runtime_error(RuntimeError::TypeMismatch(
+                    "boolean".into(),
+                    format!("{}", other),
+                ))),
             },
-            _ => panic!("Invalid unary operator {:?}", op), // TODO do not panic
+            _ => Err(ice(ICE::Generic(format!(
+                "Invalid unary operator '{:?}'",
+                op
+            )))),
         }
     }
 
-    fn calc_binary(&mut self, left: &Expr, op: TokenType, right: &Expr) -> Value {
+    fn calc_binary(&mut self, left: &Expr, op: TokenType, right: &Expr) -> Result<Value> {
         use TokenType::*;
         use Value::*;
 
-        let left = self.calc_expr(left);
-        let right = self.calc_expr(right);
+        let left = self.calc_expr(left)?;
+        let right = self.calc_expr(right)?;
 
         match (left, op, right) {
             // booleans
-            (Boolean(l), And, Boolean(r)) => Boolean(l && r), // TODO short circuit?
-            (Boolean(l), Or, Boolean(r)) => Boolean(l || r),  // TODO short circuit?
+            (Boolean(l), And, Boolean(r)) => Ok(Boolean(l && r)), // TODO short circuit?
+            (Boolean(l), Or, Boolean(r)) => Ok(Boolean(l || r)),  // TODO short circuit?
 
             // numbers
-            (Number(l), Plus, Number(r)) => Number(l + r),
-            (Number(l), Minus, Number(r)) => Number(l - r),
-            (Number(l), Star, Number(r)) => Number(l * r),
-            (Number(l), Slash, Number(r)) => Number(l / r), // TODO division by zero?
+            (Number(l), Plus, Number(r)) => Ok(Number(l + r)),
+            (Number(l), Minus, Number(r)) => Ok(Number(l - r)),
+            (Number(l), Star, Number(r)) => Ok(Number(l * r)),
+            (Number(_), Slash, Number(r)) if r == 0.0 => {
+                Err(runtime_error(RuntimeError::DivisionByZero))
+            }
+            (Number(l), Slash, Number(r)) => Ok(Number(l / r)),
 
             // comparisons
-            (l, EqualEqual, r) => Boolean(l == r),
-            (l, BangEqual, r) => Boolean(l != r),
-            (Number(l), Greater, Number(r)) => Boolean(l > r),
-            (Number(l), GreaterEqual, Number(r)) => Boolean(l >= r),
-            (Number(l), Less, Number(r)) => Boolean(l < r),
-            (Number(l), LessEqual, Number(r)) => Boolean(l <= r),
+            (l, EqualEqual, r) => Ok(Boolean(l == r)),
+            (l, BangEqual, r) => Ok(Boolean(l != r)),
+            (Number(l), Greater, Number(r)) => Ok(Boolean(l > r)),
+            (Number(l), GreaterEqual, Number(r)) => Ok(Boolean(l >= r)),
+            (Number(l), Less, Number(r)) => Ok(Boolean(l < r)),
+            (Number(l), LessEqual, Number(r)) => Ok(Boolean(l <= r)),
 
             // strings
-            (left, op, right) => panic!(
-                "Invalid operator application: {:?} over values {:?} and {:?}",
-                op, left, right
-            ), // TODO do not panic
+            // TODO string concatenation
+
+            (left, op, right) => Err(runtime_error(RuntimeError::InvalidOperator(
+                op,
+                format!("{}", left),
+                format!("{}", right),
+            ))),
         }
     }
 
-    fn var_decl(&mut self, name: &str, expr: &Option<Expr>) -> Value {
+    fn var_decl(&mut self, name: &str, expr: &Option<Expr>) -> Result<Value> {
         let value = expr
             .as_ref()
-            .map_or(Value::Nil, |expr| self.calc_expr(expr));
+            .map_or(Ok(Value::Nil), |expr| self.calc_expr(expr))?;
 
         self.get_curr_env_mut().define(name, value);
 
-        Value::Nil
+        Ok(Value::Nil)
     }
 
-    fn calc_assignment(&mut self, var_name: &str, rvalue: &Expr) -> Value {
-        let value = self.calc_expr(rvalue);
+    fn calc_assignment(&mut self, var_name: &str, rvalue: &Expr) -> Result<Value> {
+        let value = self.calc_expr(rvalue)?;
 
-        self.assign(var_name, value.clone());
+        self.assign(var_name, value.clone())?;
 
-        value
+        Ok(value)
     }
 
-    fn assign(&mut self, name: &str, new_value: Value) {
+    fn assign(&mut self, name: &str, new_value: Value) -> Result<()> {
         let old_value = self.envs.iter_mut().rev().find_map(|env| env.get_mut(name));
 
         match old_value {
             Some(value) => *value = new_value,
-            None => panic!("Undefined variable '{}'.", name),
+            None => return Err(runtime_error(RuntimeError::UndefinedVariable(name.into())))
         }
+
+        Ok(())
     }
 
-    fn exec_block(&mut self, statements: &[Statement]) -> Value {
+    fn exec_block(&mut self, statements: &[Statement]) -> Result<Value> {
         self.push_new_env();
 
         for stmt in statements {
-            self.exec_stmt(stmt);
+            self.exec_stmt(stmt)?;
         }
 
         self.pop_env();
 
-        Value::Nil
+        Ok(Value::Nil)
     }
 }
 
