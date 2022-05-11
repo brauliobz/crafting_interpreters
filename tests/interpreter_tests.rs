@@ -1,21 +1,26 @@
-use rlox::{ast::Statement, interpreter::Interpreter, parser, scanner};
+use rlox::{
+    ast::Statement,
+    error::{Error, RuntimeError},
+    interpreter::Interpreter,
+    parser, scanner, Result,
+};
 
-fn parse_stmts(src: &str) -> Vec<Statement> {
+fn parse_stmts(src: &str) -> Result<Vec<Statement>> {
     let tokens = scanner::scan_tokens(src).unwrap();
     parser::parse(&tokens)
 }
 
 /// executes the program and returns the generated output
-fn exec_stmts(src: &str) -> String {
-    let statements = parse_stmts(src);
+fn exec_stmts(src: &str) -> Result<String> {
+    let statements = parse_stmts(src)?;
     let mut out = Vec::new();
     let mut int = Interpreter::new(&mut out);
 
     for stmt in statements {
-        int.exec_stmt(&stmt);
+        int.exec_stmt(&stmt)?;
     }
 
-    String::from_utf8(out).unwrap()
+    Ok(String::from_utf8(out).unwrap())
 }
 
 #[test]
@@ -25,25 +30,26 @@ fn test_expr_stmt() {
         1 + 1;
         2 + 2;
     "#,
-    );
+    )
+    .unwrap();
     assert_eq!(out, "");
 }
 
 #[test]
 fn test_print() {
-    let out = exec_stmts(r#" print "Hello, World!"; "#);
+    let out = exec_stmts(r#" print "Hello, World!"; "#).unwrap();
     assert_eq!(out, "Hello, World!");
 }
 
 #[test]
 fn test_print_expr() {
-    let out = exec_stmts("print 10 + 10;");
+    let out = exec_stmts("print 10 + 10;").unwrap();
     assert_eq!(out, "20");
 }
 
 #[test]
 fn test_various_prints() {
-    let out = exec_stmts(r#"print "Hello, "; print "World!";"#);
+    let out = exec_stmts(r#"print "Hello, "; print "World!";"#).unwrap();
     assert_eq!(out, "Hello, World!");
 }
 
@@ -54,7 +60,8 @@ fn test_var_decl() {
         var a = 10;
         print a;
     "#,
-    );
+    )
+    .unwrap();
     assert_eq!(out, "10");
 }
 
@@ -65,7 +72,8 @@ fn test_var_decl_no_initializer() {
         var a;
         print a;
     "#,
-    );
+    )
+    .unwrap();
     assert_eq!(out, "Nil");
 }
 
@@ -77,14 +85,17 @@ fn test_var_redeclaration() {
         var a = true;
         print a;
     "#,
-    );
+    )
+    .unwrap();
     assert_eq!(out, "true");
 }
 
 #[test]
-#[should_panic]
 fn test_undefined_var_use() {
-    exec_stmts("print a;");
+    assert!(matches!(
+        exec_stmts("print a;"),
+        Err(Error::RuntimeError(RuntimeError::UndefinedVariable(_)))
+    ));
 }
 
 #[test]
@@ -95,18 +106,17 @@ fn test_assignment() {
         a = false;
         print a;
     "#,
-    );
+    )
+    .unwrap();
     assert_eq!(out, "false");
 }
 
 #[test]
-#[should_panic]
 fn test_assignment_of_undefined_var() {
-    exec_stmts(
-        r#"
-        a = 10;
-    "#,
-    );
+    assert!(matches!(
+        exec_stmts("a = 10;"),
+        Err(Error::RuntimeError(RuntimeError::UndefinedVariable(_)))
+    ));
 }
 
 #[test]
@@ -118,36 +128,40 @@ fn test_assignment_of_assignment() {
         a = b = 10;
         print a;
     "#,
-    );
+    )
+    .unwrap();
     assert_eq!(out, "10");
 }
 
 #[test]
 fn test_block_execution() {
-    let out = exec_stmts(r#"
+    let out = exec_stmts(
+        r#"
         {
             print "Hello, ";
             print "World!";
         }
-    "#);
-
-    assert_eq!(
-        out,
-        "Hello, World!"
+    "#,
     )
+    .unwrap();
+
+    assert_eq!(out, "Hello, World!")
 }
 
 #[test]
 fn test_shadowing() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             var a = "World!";
             {
                 var a = "Hello, ";
                 print a;
             }
             print a;
-        "#),
+        "#
+        )
+        .unwrap(),
         "Hello, World!"
     );
 }
@@ -155,12 +169,15 @@ fn test_shadowing() {
 #[test]
 fn test_variable_access_from_outer_scope() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             var a = 10;
             {
                 print a;
             }
-        "#),
+        "#
+        )
+        .unwrap(),
         "10"
     );
 }
@@ -168,14 +185,17 @@ fn test_variable_access_from_outer_scope() {
 #[test]
 fn test_variable_access_from_outer_outer_scope() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             var a = 10;
             {
                 {
                     print a;
                 }
             }
-        "#),
+        "#
+        )
+        .unwrap(),
         "10"
     );
 }
