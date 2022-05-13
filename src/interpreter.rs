@@ -43,7 +43,7 @@ impl<'output> Interpreter<'output> {
 
     pub fn print_stmt(&mut self, expr: &Expr) -> Result<Value> {
         let value = self.calc_expr(expr)?;
-        let output = format!("{}", value);
+        let output = format!("{}\n", value);
         self.stdout.write_all(output.as_bytes())?;
         Ok(Value::Nil)
     }
