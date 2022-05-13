@@ -122,7 +122,7 @@ impl<'output> Interpreter<'output> {
             (Number(l), LessEqual, Number(r)) => Ok(Boolean(l <= r)),
 
             // strings
-            // TODO string concatenation
+            (Value::String(l), Plus, Value::String(r)) => Ok(Value::String(l + &r)),
 
             (left, op, right) => Err(runtime_error(RuntimeError::InvalidOperator(
                 op,
