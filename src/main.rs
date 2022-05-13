@@ -46,10 +46,7 @@ fn run_prompt(interpreter: &mut Interpreter) -> Result<()> {
 
 fn run(src: &str, interpreter: &mut Interpreter) -> Result<()> {
     let tokens = scanner::scan_tokens(src)?;
-    println!("tokens: {:?}", tokens);
-
     let statements = parser::parse(&tokens)?;
-    println!("ast: {:?}", statements);
 
     for stmt in statements {
         interpreter.exec_stmt(&stmt)?;
