@@ -38,19 +38,19 @@ fn test_expr_stmt() {
 #[test]
 fn test_print() {
     let out = exec_stmts(r#" print "Hello, World!"; "#).unwrap();
-    assert_eq!(out, "Hello, World!");
+    assert_eq!(out, "Hello, World!\n");
 }
 
 #[test]
 fn test_print_expr() {
     let out = exec_stmts("print 10 + 10;").unwrap();
-    assert_eq!(out, "20");
+    assert_eq!(out, "20\n");
 }
 
 #[test]
 fn test_various_prints() {
     let out = exec_stmts(r#"print "Hello, "; print "World!";"#).unwrap();
-    assert_eq!(out, "Hello, World!");
+    assert_eq!(out, "Hello, \nWorld!\n");
 }
 
 #[test]
@@ -62,7 +62,7 @@ fn test_var_decl() {
     "#,
     )
     .unwrap();
-    assert_eq!(out, "10");
+    assert_eq!(out, "10\n");
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn test_var_decl_no_initializer() {
     "#,
     )
     .unwrap();
-    assert_eq!(out, "Nil");
+    assert_eq!(out, "Nil\n");
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn test_var_redeclaration() {
     "#,
     )
     .unwrap();
-    assert_eq!(out, "true");
+    assert_eq!(out, "true\n");
 }
 
 #[test]
@@ -108,7 +108,7 @@ fn test_assignment() {
     "#,
     )
     .unwrap();
-    assert_eq!(out, "false");
+    assert_eq!(out, "false\n");
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn test_assignment_of_assignment() {
     "#,
     )
     .unwrap();
-    assert_eq!(out, "10");
+    assert_eq!(out, "10\n");
 }
 
 #[test]
@@ -145,7 +145,7 @@ fn test_block_execution() {
     )
     .unwrap();
 
-    assert_eq!(out, "Hello, World!")
+    assert_eq!(out, "Hello, \nWorld!\n")
 }
 
 #[test]
@@ -162,7 +162,7 @@ fn test_shadowing() {
         "#
         )
         .unwrap(),
-        "Hello, World!"
+        "Hello, \nWorld!\n"
     );
 }
 
@@ -178,7 +178,7 @@ fn test_variable_access_from_outer_scope() {
         "#
         )
         .unwrap(),
-        "10"
+        "10\n"
     );
 }
 
@@ -196,6 +196,6 @@ fn test_variable_access_from_outer_outer_scope() {
         "#
         )
         .unwrap(),
-        "10"
+        "10\n"
     );
 }
