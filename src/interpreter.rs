@@ -98,38 +98,44 @@ impl<'output> Interpreter<'output> {
         use Value::*;
 
         let left = self.calc_expr(left)?;
-        let right = self.calc_expr(right)?;
 
-        match (left, op, right) {
-            // booleans
-            (Boolean(l), And, Boolean(r)) => Ok(Boolean(l && r)), // TODO short circuit?
-            (Boolean(l), Or, Boolean(r)) => Ok(Boolean(l || r)),  // TODO short circuit?
+        if op == And {
+            Ok(Boolean(
+                is_truthy(&left) && is_truthy(&self.calc_expr(right)?),
+            ))
+        } else if op == Or {
+            Ok(Boolean(
+                is_truthy(&left) || is_truthy(&self.calc_expr(right)?),
+            ))
+        } else {
+            let right = self.calc_expr(right)?;
+            match (left, op, right) {
+                // numbers
+                (Number(l), Plus, Number(r)) => Ok(Number(l + r)),
+                (Number(l), Minus, Number(r)) => Ok(Number(l - r)),
+                (Number(l), Star, Number(r)) => Ok(Number(l * r)),
+                (Number(_), Slash, Number(r)) if r == 0.0 => {
+                    Err(runtime_error(RuntimeError::DivisionByZero))
+                }
+                (Number(l), Slash, Number(r)) => Ok(Number(l / r)),
 
-            // numbers
-            (Number(l), Plus, Number(r)) => Ok(Number(l + r)),
-            (Number(l), Minus, Number(r)) => Ok(Number(l - r)),
-            (Number(l), Star, Number(r)) => Ok(Number(l * r)),
-            (Number(_), Slash, Number(r)) if r == 0.0 => {
-                Err(runtime_error(RuntimeError::DivisionByZero))
+                // comparisons
+                (l, EqualEqual, r) => Ok(Boolean(l == r)),
+                (l, BangEqual, r) => Ok(Boolean(l != r)),
+                (Number(l), Greater, Number(r)) => Ok(Boolean(l > r)),
+                (Number(l), GreaterEqual, Number(r)) => Ok(Boolean(l >= r)),
+                (Number(l), Less, Number(r)) => Ok(Boolean(l < r)),
+                (Number(l), LessEqual, Number(r)) => Ok(Boolean(l <= r)),
+
+                // strings
+                (Value::String(l), Plus, Value::String(r)) => Ok(Value::String(l + &r)),
+
+                (left, op, right) => Err(runtime_error(RuntimeError::InvalidOperator(
+                    op,
+                    format!("{}", left),
+                    format!("{}", right),
+                ))),
             }
-            (Number(l), Slash, Number(r)) => Ok(Number(l / r)),
-
-            // comparisons
-            (l, EqualEqual, r) => Ok(Boolean(l == r)),
-            (l, BangEqual, r) => Ok(Boolean(l != r)),
-            (Number(l), Greater, Number(r)) => Ok(Boolean(l > r)),
-            (Number(l), GreaterEqual, Number(r)) => Ok(Boolean(l >= r)),
-            (Number(l), Less, Number(r)) => Ok(Boolean(l < r)),
-            (Number(l), LessEqual, Number(r)) => Ok(Boolean(l <= r)),
-
-            // strings
-            (Value::String(l), Plus, Value::String(r)) => Ok(Value::String(l + &r)),
-
-            (left, op, right) => Err(runtime_error(RuntimeError::InvalidOperator(
-                op,
-                format!("{}", left),
-                format!("{}", right),
-            ))),
         }
     }
 

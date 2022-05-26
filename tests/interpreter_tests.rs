@@ -235,10 +235,12 @@ fn test_if_then_block() {
 #[test]
 fn test_else_executes() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             if (false) print "Hello";
             else print "World"; "#
-        ).unwrap(),
+        )
+        .unwrap(),
         "World\n"
     )
 }
@@ -246,10 +248,12 @@ fn test_else_executes() {
 #[test]
 fn test_else_do_not_executes() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             if (true) print "Hello";
             else print "World"; "#
-        ).unwrap(),
+        )
+        .unwrap(),
         "Hello\n"
     )
 }
@@ -257,11 +261,13 @@ fn test_else_do_not_executes() {
 #[test]
 fn test_else_if_executes_if() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             if (false) print "Hello";
             else if (true) print "World";
             else print "!"; "#
-        ).unwrap(),
+        )
+        .unwrap(),
         "World\n"
     )
 }
@@ -269,11 +275,13 @@ fn test_else_if_executes_if() {
 #[test]
 fn test_else_if_executes_else() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             if (false) print "Hello";
             else if (false) print "World";
             else print "!"; "#
-        ).unwrap(),
+        )
+        .unwrap(),
         "!\n"
     )
 }
@@ -281,11 +289,13 @@ fn test_else_if_executes_else() {
 #[test]
 fn test_dangling_else_executes() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             if (true)
                 if (false) print "Hello";
                 else print "World"; "#
-        ).unwrap(),
+        )
+        .unwrap(),
         "World\n"
     )
 }
@@ -314,3 +324,42 @@ true is truthy
     // TODO test object truthyness
 }
 
+#[test]
+fn test_short_circuit_and() {
+    assert_eq!(
+        exec_stmts(r#"
+            var a = true;
+            var b = a and (a = "Hello");
+            print a; "#
+        ).unwrap(),
+        "Hello\n"
+    );
+    assert_eq!(
+        exec_stmts(r#"
+            var a = false;
+            var b = a and (a = "Hello");
+            print a; "#
+        ).unwrap(),
+        "false\n"
+    );
+}
+
+#[test]
+fn test_short_circuit_or() {
+    assert_eq!(
+        exec_stmts(r#"
+            var a = false;
+            var b = a or (a = "Hello");
+            print a; "#
+        ).unwrap(),
+        "Hello\n"
+    );
+    assert_eq!(
+        exec_stmts(r#"
+            var a = true;
+            var b = a or (a = "Hello");
+            print a; "#
+        ).unwrap(),
+        "true\n"
+    );
+}
