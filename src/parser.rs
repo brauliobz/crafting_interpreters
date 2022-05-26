@@ -331,7 +331,7 @@ impl<'tokens> Parser<'tokens> {
         } else if self.matches(Identifier) {
             Ok(Expr::Identifier(self.previous()?.lexeme.into()))
         } else if self.matches(LeftParen) {
-            let expr = self.equality_expr()?;
+            let expr = self.assignment_expr()?;
             self.consume(RightParen)?;
             Ok(Expr::Grouping(Box::new(expr)))
         } else {
