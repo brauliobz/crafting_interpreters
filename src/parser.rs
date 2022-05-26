@@ -1,6 +1,6 @@
 use crate::{
     ast::*,
-    error::{compilation_error, CompilationError, Error, ice, ICE},
+    error::{compilation_error, ice, CompilationError, Error, ICE},
     scanner::{Token, TokenType, TokenType::*},
     Result,
 };
@@ -123,13 +123,31 @@ impl<'tokens> Parser<'tokens> {
     }
 
     fn statement(&mut self) -> Result<Statement> {
-        if self.matches(Print) {
+        if self.matches(If) {
+            self.if_stmt()
+        } else if self.matches(Print) {
             self.print_stmt()
         } else if self.matches(LeftBrace) {
             self.block_stmt()
         } else {
             self.expr_stmt()
         }
+    }
+
+    fn if_stmt(&mut self) -> Result<Statement> {
+        self.consume(LeftParen)?;
+        let condition = self.expr()?;
+        self.consume(RightParen)?;
+
+        let then_branch = self.statement()?;
+
+        // TODO else
+
+        Ok(Statement::If(IfStatement {
+            cond: condition,
+            then_branch: Box::new(then_branch),
+            else_branch: None,
+        }))
     }
 
     fn print_stmt(&mut self) -> Result<Statement> {

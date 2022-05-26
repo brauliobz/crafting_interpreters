@@ -111,3 +111,31 @@ fn test_nonempty_block() {
 fn test_unfinished_block() {
     assert!(parse("{ a = 10; ").is_err());
 }
+
+#[test]
+fn test_if_then() {
+    assert_eq!(
+        parse(r#" if (true) print "Hello"; "#).unwrap(),
+        vec![Statement::If(IfStatement {
+            cond: Expr::Literal(LiteralExpr::Boolean(true)),
+            then_branch: Box::new(Statement::Print(Expr::Literal(LiteralExpr::String(
+                "Hello".into()
+            )))),
+            else_branch: None,
+        })]
+    );
+}
+
+#[test]
+fn test_if_then_block() {
+    assert_eq!(
+        parse(r#" if (true) { print "Hello"; } "#).unwrap(),
+        vec![Statement::If(IfStatement {
+            cond: Expr::Literal(LiteralExpr::Boolean(true)),
+            then_branch: Box::new(Statement::Block(vec![Statement::Print(Expr::Literal(
+                LiteralExpr::String("Hello".into())
+            ))])),
+            else_branch: None,
+        })]
+    );
+}

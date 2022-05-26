@@ -16,9 +16,9 @@ pub enum Statement {
 
 #[derive(Debug, PartialEq)]
 pub struct IfStatement {
-    cond: Expr,
-    then_branch: Box<Statement>,
-    else_branch: Option<Box<Statement>>,
+    pub cond: Expr,
+    pub then_branch: Box<Statement>,
+    pub else_branch: Option<Box<Statement>>,
 }
 
 #[derive(Debug, PartialEq)]
