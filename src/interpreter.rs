@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use crate::{
-    ast::{Expr, LiteralExpr, Statement},
+    ast::{Expr, LiteralExpr, Statement, IfStatement},
     environment::{Environment, Value},
     error::{ice, runtime_error, RuntimeError, ICE},
     scanner::TokenType,
@@ -27,7 +27,7 @@ impl<'output> Interpreter<'output> {
             Statement::Print(expr) => self.print_stmt(expr),
             Statement::VariableDecl(name, value) => self.var_decl(name, value),
             Statement::Block(statements) => self.exec_block(statements),
-            Statement::If(_) => todo!(),
+            Statement::If(if_statement) => self.if_stmt(if_statement),
         }
     }
 
@@ -173,6 +173,18 @@ impl<'output> Interpreter<'output> {
 
         Ok(Value::Nil)
     }
+
+    fn if_stmt(&mut self, if_statement: &IfStatement) -> Result<Value> {
+        let cond_value = self.calc_expr(&if_statement.cond)?;
+
+        if is_truthy(&cond_value) {
+            self.exec_stmt(&if_statement.then_branch)?;
+        };
+
+        // TODO else
+
+        Ok(Value::Nil)
+    }
 }
 
 fn calc_lit(lit: &LiteralExpr) -> Value {
@@ -183,4 +195,9 @@ fn calc_lit(lit: &LiteralExpr) -> Value {
         String(s) => Value::String(s.clone()),
         Nil => Value::Nil,
     }
+}
+
+fn is_truthy(value: &Value) -> bool {
+    // TODO
+    *value == Value::Boolean(true)
 }

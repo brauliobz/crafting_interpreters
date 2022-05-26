@@ -199,3 +199,35 @@ fn test_variable_access_from_outer_outer_scope() {
         "10\n"
     );
 }
+
+#[test]
+fn test_if_then() {
+    assert_eq!(
+        exec_stmts(r#" if (true) print "Hello, World!"; "#).unwrap(),
+        "Hello, World!\n"
+    )
+}
+
+#[test]
+fn test_if_then_false_condition() {
+    assert_eq!(
+        exec_stmts(r#" if (false) print "Hello, World!"; "#).unwrap(),
+        ""
+    )
+}
+
+#[test]
+fn test_if_then_nontrivial_condition() {
+    assert_eq!(
+        exec_stmts(r#" if (10 + 10 > 15) print "Hello, World!"; "#).unwrap(),
+        "Hello, World!\n"
+    )
+}
+
+#[test]
+fn test_if_then_block() {
+    assert_eq!(
+        exec_stmts(r#" if (true) { print "Hello, World!"; } "#).unwrap(),
+        "Hello, World!\n"
+    )
+}
