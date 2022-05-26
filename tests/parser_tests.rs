@@ -127,7 +127,7 @@ fn test_if_then() {
 }
 
 #[test]
-fn test_if_then_block() {
+fn test_if_then_with_block() {
     assert_eq!(
         parse(r#" if (true) { print "Hello"; } "#).unwrap(),
         vec![Statement::If(IfStatement {
@@ -135,6 +135,97 @@ fn test_if_then_block() {
             then_branch: Box::new(Statement::Block(vec![Statement::Print(Expr::Literal(
                 LiteralExpr::String("Hello".into())
             ))])),
+            else_branch: None,
+        })]
+    );
+}
+
+#[test]
+fn test_else() {
+    assert_eq!(
+        parse(r#" if (true) print "Hello"; else print "World"; "#).unwrap(),
+        vec![Statement::If(IfStatement {
+            cond: Expr::Literal(LiteralExpr::Boolean(true)),
+            then_branch: Box::new(Statement::Print(Expr::Literal(LiteralExpr::String(
+                "Hello".into()
+            )))),
+            else_branch: Some(Box::new(Statement::Print(Expr::Literal(
+                LiteralExpr::String("World".into())
+            )))),
+        })]
+    );
+}
+
+#[test]
+fn test_else_with_block() {
+    assert_eq!(
+        parse(r#" if (true) print "Hello"; else { print "World"; } "#).unwrap(),
+        vec![Statement::If(IfStatement {
+            cond: Expr::Literal(LiteralExpr::Boolean(true)),
+            then_branch: Box::new(Statement::Print(Expr::Literal(LiteralExpr::String(
+                "Hello".into()
+            )))),
+            else_branch: Some(Box::new(Statement::Block(vec![Statement::Print(
+                Expr::Literal(LiteralExpr::String("World".into()))
+            )]))),
+        })]
+    );
+}
+
+#[test]
+fn test_else_if() {
+    assert_eq!(
+        parse(
+            r#"
+            if (true)
+                print "Hello";
+            else if (true)
+                print "World";
+            else
+                print "!"; "#
+        )
+        .unwrap(),
+        vec![Statement::If(IfStatement {
+            cond: Expr::Literal(LiteralExpr::Boolean(true)),
+            then_branch: Box::new(Statement::Print(Expr::Literal(LiteralExpr::String(
+                "Hello".into()
+            )))),
+            else_branch: Some(Box::new(Statement::If(IfStatement {
+                cond: Expr::Literal(LiteralExpr::Boolean(true)),
+                then_branch: Box::new(Statement::Print(Expr::Literal(LiteralExpr::String(
+                    "World".into()
+                )))),
+                else_branch: Some(Box::new(Statement::Print(Expr::Literal(
+                    LiteralExpr::String("!".into())
+                ))))
+            }))),
+        })]
+    );
+}
+
+#[test]
+fn test_dangling_else_goes_to_innermost_if() {
+    assert_eq!(
+        parse(
+            r#"
+            if (true)
+                if (true)
+                    print "Hello";
+                else
+                    print "World"; "#
+        )
+        .unwrap(),
+        vec![Statement::If(IfStatement {
+            cond: Expr::Literal(LiteralExpr::Boolean(true)),
+            then_branch: Box::new(Statement::If(IfStatement {
+                cond: Expr::Literal(LiteralExpr::Boolean(true)),
+                then_branch: Box::new(Statement::Print(Expr::Literal(LiteralExpr::String(
+                    "Hello".into()
+                )))),
+                else_branch: Some(Box::new(Statement::Print(Expr::Literal(
+                    LiteralExpr::String("World".into())
+                )))),
+            })),
             else_branch: None,
         })]
     );

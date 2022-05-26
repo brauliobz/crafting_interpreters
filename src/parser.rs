@@ -136,17 +136,20 @@ impl<'tokens> Parser<'tokens> {
 
     fn if_stmt(&mut self) -> Result<Statement> {
         self.consume(LeftParen)?;
-        let condition = self.expr()?;
+        let cond = self.expr()?;
         self.consume(RightParen)?;
 
-        let then_branch = self.statement()?;
+        let then_branch = Box::new(self.statement()?);
 
-        // TODO else
+        let mut else_branch = None;
+        if self.matches(Else) {
+            else_branch = Some(Box::new(self.statement()?));
+        }
 
         Ok(Statement::If(IfStatement {
-            cond: condition,
-            then_branch: Box::new(then_branch),
-            else_branch: None,
+            cond,
+            then_branch,
+            else_branch
         }))
     }
 
