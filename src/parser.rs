@@ -149,7 +149,7 @@ impl<'tokens> Parser<'tokens> {
         Ok(Statement::If(IfStatement {
             cond,
             then_branch,
-            else_branch
+            else_branch,
         }))
     }
 
@@ -197,7 +197,7 @@ impl<'tokens> Parser<'tokens> {
     }
 
     fn assignment_expr(&mut self) -> Result<Expr> {
-        let expr = self.equality_expr()?;
+        let expr = self.or_expr()?;
 
         if self.matches(Equal) {
             match expr {
@@ -217,25 +217,38 @@ impl<'tokens> Parser<'tokens> {
         Ok(expr)
     }
 
-    fn equality_expr(&mut self) -> Result<Expr> {
-        let mut expr = self.boolean_expr()?;
+    fn or_expr(&mut self) -> Result<Expr> {
+        let mut expr = self.and_expr()?;
 
-        while self.matches(EqualEqual) || self.matches(BangEqual) {
-            let op = self.previous()?;
+        while self.matches(Or) {
             expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
-                op: op.type_,
-                right: Box::new(self.boolean_expr()?),
+                op: Or,
+                right: Box::new(self.and_expr()?),
             });
         }
 
         Ok(expr)
     }
 
-    fn boolean_expr(&mut self) -> Result<Expr> {
+    fn and_expr(&mut self) -> Result<Expr> {
+        let mut expr = self.equality_expr()?;
+
+        while self.matches(And) {
+            expr = Expr::Binary(BinaryExpr {
+                left: Box::new(expr),
+                op: And,
+                right: Box::new(self.equality_expr()?),
+            });
+        }
+
+        Ok(expr)
+    }
+
+    fn equality_expr(&mut self) -> Result<Expr> {
         let mut expr = self.comparison_expr()?;
 
-        while self.matches(And) || self.matches(Or) {
+        while self.matches(EqualEqual) || self.matches(BangEqual) {
             let op = self.previous()?;
             expr = Expr::Binary(BinaryExpr {
                 left: Box::new(expr),
