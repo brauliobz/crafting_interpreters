@@ -231,3 +231,61 @@ fn test_if_then_block() {
         "Hello, World!\n"
     )
 }
+
+#[test]
+fn test_else_executes() {
+    assert_eq!(
+        exec_stmts(r#"
+            if (false) print "Hello";
+            else print "World"; "#
+        ).unwrap(),
+        "World\n"
+    )
+}
+
+#[test]
+fn test_else_do_not_executes() {
+    assert_eq!(
+        exec_stmts(r#"
+            if (true) print "Hello";
+            else print "World"; "#
+        ).unwrap(),
+        "Hello\n"
+    )
+}
+
+#[test]
+fn test_else_if_executes_if() {
+    assert_eq!(
+        exec_stmts(r#"
+            if (false) print "Hello";
+            else if (true) print "World";
+            else print "!"; "#
+        ).unwrap(),
+        "World\n"
+    )
+}
+
+#[test]
+fn test_else_if_executes_else() {
+    assert_eq!(
+        exec_stmts(r#"
+            if (false) print "Hello";
+            else if (false) print "World";
+            else print "!"; "#
+        ).unwrap(),
+        "!\n"
+    )
+}
+
+#[test]
+fn test_dangling_else_executes() {
+    assert_eq!(
+        exec_stmts(r#"
+            if (true)
+                if (false) print "Hello";
+                else print "World"; "#
+        ).unwrap(),
+        "World\n"
+    )
+}

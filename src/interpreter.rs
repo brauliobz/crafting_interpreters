@@ -179,9 +179,9 @@ impl<'output> Interpreter<'output> {
 
         if is_truthy(&cond_value) {
             self.exec_stmt(&if_statement.then_branch)?;
-        };
-
-        // TODO else
+        } else if let Some(else_branch) = &if_statement.else_branch {
+            self.exec_stmt(else_branch)?;
+        }
 
         Ok(Value::Nil)
     }
