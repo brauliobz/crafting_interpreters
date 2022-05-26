@@ -327,19 +327,23 @@ true is truthy
 #[test]
 fn test_short_circuit_and() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             var a = true;
             var b = a and (a = "Hello");
             print a; "#
-        ).unwrap(),
+        )
+        .unwrap(),
         "Hello\n"
     );
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             var a = false;
             var b = a and (a = "Hello");
             print a; "#
-        ).unwrap(),
+        )
+        .unwrap(),
         "false\n"
     );
 }
@@ -347,19 +351,70 @@ fn test_short_circuit_and() {
 #[test]
 fn test_short_circuit_or() {
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             var a = false;
             var b = a or (a = "Hello");
             print a; "#
-        ).unwrap(),
+        )
+        .unwrap(),
         "Hello\n"
     );
     assert_eq!(
-        exec_stmts(r#"
+        exec_stmts(
+            r#"
             var a = true;
             var b = a or (a = "Hello");
             print a; "#
-        ).unwrap(),
+        )
+        .unwrap(),
         "true\n"
+    );
+}
+
+#[test]
+fn test_while_does_not_enter() {
+    assert_eq!(exec_stmts(r#" while (false) print "Hello"; "#).unwrap(), "");
+}
+
+#[test]
+fn test_while_enters_once() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            var a = true;
+            while (a) {
+                print "Hello";
+                a = false;
+            } "#
+        )
+        .unwrap(),
+        "Hello\n"
+    );
+}
+
+#[test]
+fn test_while_enters_10_times() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            var a = 0;
+            while (a < 10) {
+                a = a + 1;
+                print a;
+            } "#
+        )
+        .unwrap(),
+        r#"1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+"#
     );
 }

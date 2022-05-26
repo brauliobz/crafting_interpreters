@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use crate::{
-    ast::{Expr, IfStatement, LiteralExpr, Statement},
+    ast::{Expr, IfStatement, LiteralExpr, Statement, WhileStatement},
     environment::{Environment, Value},
     error::{ice, runtime_error, RuntimeError, ICE},
     scanner::TokenType,
@@ -28,7 +28,7 @@ impl<'output> Interpreter<'output> {
             Statement::VariableDecl(name, value) => self.var_decl(name, value),
             Statement::Block(statements) => self.exec_block(statements),
             Statement::If(if_statement) => self.if_stmt(if_statement),
-            Statement::While(_) => todo!(),
+            Statement::While(while_statement) => self.while_stmt(while_statement),
         }
     }
 
@@ -188,6 +188,17 @@ impl<'output> Interpreter<'output> {
             self.exec_stmt(&if_statement.then_branch)?;
         } else if let Some(else_branch) = &if_statement.else_branch {
             self.exec_stmt(else_branch)?;
+        }
+
+        Ok(Value::Nil)
+    }
+
+    fn while_stmt(&mut self, while_statement: &WhileStatement) -> Result<Value> {
+        let mut cond_value = self.calc_expr(&while_statement.cond)?;
+
+        while is_truthy(&cond_value) {
+            self.exec_stmt(&while_statement.stmt)?;
+            cond_value = self.calc_expr(&while_statement.cond)?;
         }
 
         Ok(Value::Nil)
