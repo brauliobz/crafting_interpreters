@@ -289,3 +289,28 @@ fn test_dangling_else_executes() {
         "World\n"
     )
 }
+
+#[test]
+fn test_truthyness() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            if (0) print "0 is truthy";
+            if (1) print "1 is truthy";
+            if ("bla") print "a string is truthy";
+            if (true) print "true is truthy";
+            if (false) print "false is truthy";
+            if (nil) print "nil is truthy";
+        "#
+        )
+        .unwrap(),
+        r#"0 is truthy
+1 is truthy
+a string is truthy
+true is truthy
+"#
+    );
+
+    // TODO test object truthyness
+}
+

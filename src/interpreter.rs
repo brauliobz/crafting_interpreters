@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use crate::{
-    ast::{Expr, LiteralExpr, Statement, IfStatement},
+    ast::{Expr, IfStatement, LiteralExpr, Statement},
     environment::{Environment, Value},
     error::{ice, runtime_error, RuntimeError, ICE},
     scanner::TokenType,
@@ -156,7 +156,7 @@ impl<'output> Interpreter<'output> {
 
         match old_value {
             Some(value) => *value = new_value,
-            None => return Err(runtime_error(RuntimeError::UndefinedVariable(name.into())))
+            None => return Err(runtime_error(RuntimeError::UndefinedVariable(name.into()))),
         }
 
         Ok(())
@@ -198,6 +198,5 @@ fn calc_lit(lit: &LiteralExpr) -> Value {
 }
 
 fn is_truthy(value: &Value) -> bool {
-    // TODO
-    *value == Value::Boolean(true)
+    !matches!(value, Value::Boolean(false) | Value::Nil)
 }
