@@ -9,8 +9,7 @@ logos = {version = "0.12.0", optional = true}
 thiserror = "1.0.30"
 
 [features]
-default = ["scanner_clike"]
+default = ["scanner_recursive_descent"]
 
-scanner_clike = []
-scanner_rusty = []
+scanner_recursive_descent = []
 scanner_logos = ["dep:logos"]
