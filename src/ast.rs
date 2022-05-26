@@ -12,6 +12,7 @@ pub enum Statement {
     VariableDecl(String, Option<Expr>),
     Block(Vec<Statement>),
     If(IfStatement),
+    While(WhileStatement),
 }
 
 #[derive(Debug, PartialEq)]
@@ -19,6 +20,12 @@ pub struct IfStatement {
     pub cond: Expr,
     pub then_branch: Box<Statement>,
     pub else_branch: Option<Box<Statement>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct WhileStatement {
+    pub cond: Expr,
+    pub stmt: Box<Statement>,
 }
 
 #[derive(Debug, PartialEq)]

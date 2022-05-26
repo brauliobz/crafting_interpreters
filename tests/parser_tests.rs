@@ -230,3 +230,41 @@ fn test_dangling_else_goes_to_innermost_if() {
         })]
     );
 }
+
+#[test]
+fn test_while() {
+    assert_eq!(
+        parse(
+            r#"
+            while (false) print "Hello";
+        "#
+        )
+        .unwrap(),
+        vec![Statement::While(WhileStatement {
+            cond: Expr::Literal(LiteralExpr::Boolean(false)),
+            stmt: Box::new(Statement::Print(Expr::Literal(LiteralExpr::String(
+                "Hello".into()
+            )))),
+        })]
+    );
+}
+
+#[test]
+fn test_while_with_block() {
+    assert_eq!(
+        parse(
+            r#"
+            while (false) {
+                print "Hello";
+            }
+        "#
+        )
+        .unwrap(),
+        vec![Statement::While(WhileStatement {
+            cond: Expr::Literal(LiteralExpr::Boolean(false)),
+            stmt: Box::new(Statement::Block(vec![Statement::Print(Expr::Literal(
+                LiteralExpr::String("Hello".into())
+            ))])),
+        })]
+    );
+}

@@ -129,6 +129,8 @@ impl<'tokens> Parser<'tokens> {
             self.print_stmt()
         } else if self.matches(LeftBrace) {
             self.block_stmt()
+        } else if self.matches(While) {
+            self.while_stmt()
         } else {
             self.expr_stmt()
         }
@@ -190,6 +192,16 @@ impl<'tokens> Parser<'tokens> {
         )?; // TODO create specific error
 
         Ok(Statement::Block(statements))
+    }
+
+    fn while_stmt(&mut self) -> Result<Statement> {
+        self.consume(LeftParen)?;
+        let cond = self.expr()?;
+        self.consume(RightParen)?;
+
+        let stmt = Box::new(self.statement()?);
+
+        Ok(Statement::While(WhileStatement { cond, stmt }))
     }
 
     fn expr(&mut self) -> Result<Expr> {
