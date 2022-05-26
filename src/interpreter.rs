@@ -27,6 +27,7 @@ impl<'output> Interpreter<'output> {
             Statement::Print(expr) => self.print_stmt(expr),
             Statement::VariableDecl(name, value) => self.var_decl(name, value),
             Statement::Block(statements) => self.exec_block(statements),
+            Statement::If(_) => todo!(),
         }
     }
 

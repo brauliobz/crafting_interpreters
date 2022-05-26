@@ -11,6 +11,14 @@ pub enum Statement {
     Print(Expr),
     VariableDecl(String, Option<Expr>),
     Block(Vec<Statement>),
+    If(IfStatement),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct IfStatement {
+    cond: Expr,
+    then_branch: Box<Statement>,
+    else_branch: Option<Box<Statement>>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -20,7 +28,7 @@ pub enum Expr {
     Unary(UnaryExpr),
     Binary(BinaryExpr),
     Grouping(Box<Expr>),
-    Assignment(String, Box<Expr>)
+    Assignment(String, Box<Expr>),
 }
 
 #[derive(Debug, PartialEq)]
