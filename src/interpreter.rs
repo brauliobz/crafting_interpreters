@@ -29,6 +29,7 @@ impl<'output> Interpreter<'output> {
             Statement::Block(statements) => self.exec_block(statements),
             Statement::If(if_statement) => self.if_stmt(if_statement),
             Statement::While(while_statement) => self.while_stmt(while_statement),
+            Statement::FunDecl(_) => todo!(),
         }
     }
 

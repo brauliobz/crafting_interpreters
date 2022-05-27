@@ -13,6 +13,7 @@ pub enum Statement {
     Block(Vec<Statement>),
     If(IfStatement),
     While(WhileStatement),
+    FunDecl(FunctionDecl),
 }
 
 #[derive(Debug, PartialEq)]
@@ -26,6 +27,13 @@ pub struct IfStatement {
 pub struct WhileStatement {
     pub cond: Expr,
     pub stmt: Box<Statement>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct FunctionDecl {
+    pub name: String,
+    pub params: Vec<String>,
+    pub body: Vec<Statement>,
 }
 
 #[derive(Debug, PartialEq)]

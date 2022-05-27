@@ -95,6 +95,8 @@ impl<'tokens> Parser<'tokens> {
     fn declaration(&mut self) -> Result<Statement> {
         if self.matches(Var) {
             self.var_declaration()
+        } else if self.matches(Fun) {
+            self.fun_declaration()
         } else {
             self.statement()
         }
@@ -120,6 +122,46 @@ impl<'tokens> Parser<'tokens> {
         )?;
 
         Ok(Statement::VariableDecl(name, initializer))
+    }
+
+    fn fun_declaration(&mut self) -> Result<Statement> {
+        // function name
+
+        let name = self.consume(Identifier)?.lexeme.to_owned();
+
+        // parameters
+
+        self.consume(LeftParen)?;
+        let mut params = vec![];
+
+        while !self.check(RightParen) {
+            params.push(self.consume(Identifier)?.lexeme.to_owned());
+
+            if params.len() > 256 {
+                return Err(compilation_error(CompilationError::GenericError(
+                    "Can't have more than 256 arguments in a function definition.".into(),
+                )));
+            }
+
+            if !self.matches(Comma) {
+                break;
+            }
+        }
+
+        self.consume(RightParen)?;
+
+        // function body
+
+        self.consume(LeftBrace)?;
+
+        let mut body = vec![];
+        while !self.check(RightBrace) && !self.is_at_end() {
+            body.push(self.declaration()?);
+        }
+
+        self.consume(RightBrace)?;
+
+        Ok(Statement::FunDecl(FunctionDecl { name, params, body }))
     }
 
     fn statement(&mut self) -> Result<Statement> {
