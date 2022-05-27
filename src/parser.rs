@@ -407,6 +407,12 @@ impl<'tokens> Parser<'tokens> {
         while !self.check(RightParen) {
             args.push(self.expr()?);
 
+            if args.len() > 256 {
+                return Err(compilation_error(CompilationError::GenericError(
+                    "Can't have more than 256 arguments in a function call.".into(),
+                )));
+            }
+
             if !self.matches(Comma) {
                 break;
             }
