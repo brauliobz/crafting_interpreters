@@ -268,3 +268,130 @@ fn test_while_with_block() {
         })]
     );
 }
+
+#[test]
+fn test_for_loop_without_clauses() {
+    assert_eq!(
+        parse(
+            r#"
+            for (;;)
+                print "Hello";
+        "#
+        )
+        .unwrap(),
+        parse(
+            r#"
+            {
+                while (true) {
+                    print "Hello";
+                }
+            }
+        "#
+        )
+        .unwrap()
+    );
+}
+
+#[test]
+fn test_for_loop_without_initialization() {
+    assert_eq!(
+        parse(
+            r#"
+            var i = 0;
+            for (; i < 10 ; i = i + 1)
+                print "Hello";
+        "#
+        )
+        .unwrap(),
+        parse(
+            r#"
+            var i = 0;
+            {
+                while (i < 10) {
+                    print "Hello";
+                    i = i + 1;
+                }
+            }
+        "#
+        )
+        .unwrap()
+    );
+}
+
+#[test]
+fn test_for_loop_with_var_declaration() {
+    assert_eq!(
+        parse(
+            r#"
+            for (var i = 0;;)
+                print "Hello";
+        "#
+        )
+        .unwrap(),
+        parse(
+            r#"
+            {
+                var i = 0;
+                while (true) {
+                    print "Hello";
+                }
+            }
+        "#
+        )
+        .unwrap()
+    );
+}
+
+#[test]
+fn test_for_loop_with_expression_initialization() {
+    assert_eq!(
+        parse(
+            r#"
+            var i;
+            for (i = 0;;)
+                print "Hello";
+        "#
+        )
+        .unwrap(),
+        parse(
+            r#"
+            var i;
+            {
+                i = 0;
+                while (true) {
+                    print "Hello";
+                }
+            }
+        "#
+        )
+        .unwrap()
+    );
+}
+
+#[test]
+fn test_for_loop_with_all_clauses() {
+    assert_eq!(
+        parse(
+            r#"
+                for (var i = 0; i < 10; i = i + 1) {
+                    print i;
+                }
+            "#
+        )
+        .unwrap(),
+        parse(
+            r#"
+                {
+                    var i = 0;
+                    while (i < 10) {
+                        {
+                            print i;
+                        }
+                        i = i + 1;
+                    }
+                }
+            "#
+        )
+        .unwrap()
+    );
+}

@@ -131,6 +131,8 @@ impl<'tokens> Parser<'tokens> {
             self.block_stmt()
         } else if self.matches(While) {
             self.while_stmt()
+        } else if self.matches(For) {
+            self.for_stmt()
         } else {
             self.expr_stmt()
         }
@@ -202,6 +204,56 @@ impl<'tokens> Parser<'tokens> {
         let stmt = Box::new(self.statement()?);
 
         Ok(Statement::While(WhileStatement { cond, stmt }))
+    }
+
+    fn for_stmt(&mut self) -> Result<Statement> {
+        self.consume(LeftParen)?;
+
+        // initialization clause
+
+        let initialization = if self.matches(Semicolon) {
+            None
+        } else if self.matches(Var) {
+            Some(self.var_declaration()?)
+        } else {
+            Some(self.expr_stmt()?)
+        };
+
+        // condition clause
+
+        let condition = if self.check(Semicolon) {
+            None
+        } else {
+            Some(self.expr()?)
+        };
+        self.consume(Semicolon)?;
+
+        // increment clause
+
+        let increment = if self.check(RightParen) {
+            None
+        } else {
+            Some(Statement::Expr(self.expr()?))
+        };
+        self.consume(RightParen)?;
+
+        // looped statement
+
+        let body = self.statement()?;
+
+        // desugar into a while loop
+
+        let mut while_body = vec![body];
+        while_body.extend(increment.into_iter());
+
+        let mut gen_body = vec![];
+        gen_body.extend(initialization.into_iter());
+        gen_body.push(Statement::While(WhileStatement {
+            cond: condition.unwrap_or(Expr::Literal(LiteralExpr::Boolean(true))),
+            stmt: Box::new(Statement::Block(while_body)),
+        }));
+
+        Ok(Statement::Block(gen_body))
     }
 
     fn expr(&mut self) -> Result<Expr> {

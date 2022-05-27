@@ -1,7 +1,7 @@
 [package]
+edition = "2021"
 name = "rlox"
 version = "0.1.0"
-edition = "2021"
 
 [dependencies]
 lazy_static = "1.4.0"
@@ -11,5 +11,5 @@ thiserror = "1.0.30"
 [features]
 default = ["scanner_recursive_descent"]
 
-scanner_recursive_descent = []
 scanner_logos = ["dep:logos"]
+scanner_recursive_descent = []
