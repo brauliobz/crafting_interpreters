@@ -381,8 +381,43 @@ impl<'tokens> Parser<'tokens> {
                 expr: Box::new(self.unary_expr()?),
             }))
         } else {
-            self.primary_expr()
+            self.call_expr()
         }
+    }
+
+    fn call_expr(&mut self) -> Result<Expr> {
+        let mut expr = self.primary_expr()?;
+
+        while self.matches(LeftParen) {
+            expr = self.finish_call_expr(expr)?;
+        }
+
+        Ok(expr)
+    }
+
+    fn finish_call_expr(&mut self, callee: Expr) -> Result<Expr> {
+        let mut args = vec![];
+
+        if self.check(Comma) {
+            return Err(compilation_error(CompilationError::GenericError(
+                "Expected an expression or closing parenthesis, not a comma.".into(),
+            )));
+        }
+
+        while !self.check(RightParen) {
+            args.push(self.expr()?);
+
+            if !self.matches(Comma) {
+                break;
+            }
+        }
+
+        self.consume(RightParen)?;
+
+        Ok(Expr::Call(CallExpr {
+            callee: Box::new(callee),
+            args,
+        }))
     }
 
     fn primary_expr(&mut self) -> Result<Expr> {
@@ -412,7 +447,9 @@ impl<'tokens> Parser<'tokens> {
             self.consume(RightParen)?;
             Ok(Expr::Grouping(Box::new(expr)))
         } else {
-            todo!() // TODO generate error
+            Err(compilation_error(CompilationError::GenericError(
+                "Expression expected".into(),
+            )))
         }
     }
 }

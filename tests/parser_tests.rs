@@ -395,3 +395,101 @@ fn test_for_loop_with_all_clauses() {
         .unwrap()
     );
 }
+
+#[test]
+fn test_simplest_function_call() {
+    assert_eq!(
+        parse("f();").unwrap(),
+        vec![Statement::Expr(Expr::Call(CallExpr {
+            callee: Box::new(Expr::Identifier("f".into())),
+            args: vec![]
+        }))]
+    );
+}
+
+#[test]
+fn test_call_with_one_argument() {
+    assert_eq!(
+        parse("f(1);").unwrap(),
+        vec![Statement::Expr(Expr::Call(CallExpr {
+            callee: Box::new(Expr::Identifier("f".into())),
+            args: vec![Expr::Literal(LiteralExpr::Number(1.0))]
+        }))]
+    );
+}
+
+#[test]
+fn test_call_with_3_arguments() {
+    assert_eq!(
+        parse("f(1, 2 + a, 3 * b);").unwrap(),
+        vec![Statement::Expr(Expr::Call(CallExpr {
+            callee: Box::new(Expr::Identifier("f".into())),
+            args: vec![
+                Expr::Literal(LiteralExpr::Number(1.0)),
+                Expr::Binary(BinaryExpr {
+                    left: Box::new(Expr::Literal(LiteralExpr::Number(2.0))),
+                    op: Plus,
+                    right: Box::new(Expr::Identifier("a".into())),
+                }),
+                Expr::Binary(BinaryExpr {
+                    left: Box::new(Expr::Literal(LiteralExpr::Number(3.0))),
+                    op: Star,
+                    right: Box::new(Expr::Identifier("b".into())),
+                })
+            ]
+        }))]
+    );
+}
+
+#[test]
+fn test_call_with_nontrivial_callee() {
+    assert_eq!(
+        parse("(f())();").unwrap(),
+        vec![Statement::Expr(Expr::Call(CallExpr {
+            callee: Box::new(Expr::Grouping(Box::new(Expr::Call(CallExpr {
+                callee: Box::new(Expr::Identifier("f".into())),
+                args: vec![],
+            })))),
+            args: vec![]
+        }))]
+    );
+}
+
+#[test]
+fn test_call_after_call() {
+    assert_eq!(
+        parse("f()();").unwrap(),
+        vec![Statement::Expr(Expr::Call(CallExpr {
+            callee: Box::new(Expr::Call(CallExpr {
+                callee: Box::new(Expr::Identifier("f".into())),
+                args: vec![],
+            })),
+            args: vec![],
+        }))]
+    );
+}
+
+#[test]
+fn test_call_trailing_comma() {
+    assert!(matches!(parse("f(a,)"), Err(_)));
+}
+
+#[test]
+fn test_call_expression_expected() {
+    assert!(matches!(parse("f(, a)"), Err(_)));
+}
+
+#[test]
+fn test_call_without_closing_parenthesis() {
+    assert!(matches!(parse("f("), Err(_)))
+}
+
+#[test]
+fn test_call_without_closing_parenthesis_after_arg() {
+    assert!(matches!(parse("f(a"), Err(_)))
+}
+
+#[test]
+fn test_call_without_closing_parenthesis_after_args() {
+    assert!(matches!(parse("f(a, b, c"), Err(_)))
+}

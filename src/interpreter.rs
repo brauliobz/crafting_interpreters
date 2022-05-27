@@ -40,6 +40,7 @@ impl<'output> Interpreter<'output> {
             Expr::Binary(bin) => self.calc_binary(bin.left.as_ref(), bin.op, bin.right.as_ref()),
             Expr::Grouping(expr) => self.calc_expr(expr.as_ref()),
             Expr::Assignment(var_name, rvalue) => self.calc_assignment(var_name, rvalue),
+            Expr::Call(_) => todo!(),
         }
     }
 

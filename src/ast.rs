@@ -36,6 +36,7 @@ pub enum Expr {
     Binary(BinaryExpr),
     Grouping(Box<Expr>),
     Assignment(String, Box<Expr>),
+    Call(CallExpr),
 }
 
 #[derive(Debug, PartialEq)]
@@ -57,4 +58,10 @@ pub struct BinaryExpr {
     pub left: Box<Expr>,
     pub op: TokenType,
     pub right: Box<Expr>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct CallExpr {
+    pub callee: Box<Expr>,
+    pub args: Vec<Expr>,
 }
