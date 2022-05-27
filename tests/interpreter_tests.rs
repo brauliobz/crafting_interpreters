@@ -418,3 +418,132 @@ fn test_while_enters_10_times() {
 "#
     );
 }
+
+#[test]
+fn test_for_loop_with_all_clauses() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            for (var i = 0; i < 10; i = i + 1) {
+                print i;
+            }
+        "#
+        )
+        .unwrap(),
+        "0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+"
+    )
+}
+
+#[test]
+fn test_nested_for_loops() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            for (var i = 0; i < 3; i = i + 1) {
+                print "i:";
+                print i;
+                for (var j = 0; j < i; j = j + 1) {
+                    print "j:";
+                    print j;
+                }
+            }
+        "#
+        )
+        .unwrap(),
+        "i:
+0
+i:
+1
+j:
+0
+i:
+2
+j:
+0
+j:
+1
+"
+    )
+}
+
+#[test]
+fn test_for_loop_variable_scope() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            var i = 10;
+            for (var i = 0; i < 3; i = i + 1) {
+
+            }
+            print i;
+        "#
+        )
+        .unwrap(),
+        "10\n"
+    );
+}
+
+#[test]
+fn test_for_loop_without_initialization() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            var i = 0;
+            for (; i < 3; i = i + 1) {
+                print i;
+            } "#
+        )
+        .unwrap(),
+        r#"0
+1
+2
+"#
+    );
+}
+
+#[test]
+fn test_for_loop_with_expression_initialization() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            var i;
+            for (i = 0; i < 3; i = i + 1) {
+                print i;
+            } "#
+        )
+        .unwrap(),
+        r#"0
+1
+2
+"#
+    );
+}
+
+#[test]
+fn test_for_loop_with_condition_only() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            var i = 0;
+            for (; i < 3; ) {
+                print i;
+                i = i + 1;
+            } "#
+        )
+        .unwrap(),
+        r#"0
+1
+2
+"#
+    );
+}
