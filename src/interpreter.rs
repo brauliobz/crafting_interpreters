@@ -1,22 +1,28 @@
-use std::io::Write;
+use std::{cell::RefCell, io::Write, rc::Rc};
 
 use crate::{
     ast::{Expr, FunctionDecl, IfStatement, LiteralExpr, Statement, WhileStatement},
-    environment::{Environment, Function, Value},
-    error::{ice, runtime_error, RuntimeError, ICE},
+    environment::{Env, Environment, Function, Value},
+    error::{ice, runtime_error, Error, RuntimeError, ICE},
     scanner::TokenType,
     Result,
 };
 
 pub struct Interpreter<'stdout> {
-    envs: Vec<Environment>,
+    stack: Vec<Env>,
+    current_env: Env,
+    global_env: Env,
     stdout: &'stdout mut dyn Write,
 }
 
 impl<'output> Interpreter<'output> {
     pub fn new(stdout: &'output mut dyn Write) -> Self {
+        let global_env = Rc::new(RefCell::new(Environment::new(None)));
+
         Interpreter {
-            envs: vec![Environment::new()],
+            current_env: global_env.clone(),
+            stack: vec![global_env.clone()],
+            global_env,
             stdout,
         }
     }
@@ -41,7 +47,7 @@ impl<'output> Interpreter<'output> {
             Expr::Binary(bin) => self.calc_binary(bin.left.as_ref(), bin.op, bin.right.as_ref()),
             Expr::Grouping(expr) => self.calc_expr(expr.as_ref()),
             Expr::Assignment(var_name, rvalue) => self.calc_assignment(var_name, rvalue),
-            Expr::Call(_) => todo!(),
+            Expr::Call(call) => self.call_fun(&call.callee, &call.args),
         }
     }
 
@@ -52,24 +58,29 @@ impl<'output> Interpreter<'output> {
         Ok(Value::Nil)
     }
 
-    fn get_curr_env_mut(&mut self) -> &mut Environment {
-        self.envs.last_mut().expect("Stack underflow")
+    fn push_new_env(&mut self, parent: Option<Env>) {
+        let new = Rc::new(RefCell::new(Environment::new(
+            parent.or_else(|| Some(self.current_env.clone())),
+        )));
+        self.current_env = new.clone();
+        self.stack.push(new);
     }
 
-    fn push_new_env(&mut self) {
-        self.envs.push(Environment::new());
-    }
-
-    fn pop_env(&mut self) {
-        self.envs.pop();
+    fn pop_env(&mut self) -> Result<()> {
+        self.stack.pop();
+        self.current_env = self
+            .stack
+            .iter()
+            .last()
+            .cloned()
+            .ok_or_else(|| ice(ICE::Generic("Stack underflow".into())))?;
+        Ok(())
     }
 
     fn calc_identifier(&mut self, id: &str) -> Result<Value> {
-        self.envs
-            .iter()
-            .rev()
-            .find_map(|env| env.get(id))
-            .cloned()
+        self.current_env
+            .borrow()
+            .get(id)
             .ok_or_else(|| runtime_error(RuntimeError::UndefinedVariable(id.into())))
     }
 
@@ -147,39 +158,33 @@ impl<'output> Interpreter<'output> {
             .as_ref()
             .map_or(Ok(Value::Nil), |expr| self.calc_expr(expr))?;
 
-        self.get_curr_env_mut().define(name, value);
+        self.current_env.borrow_mut().define(name, value);
 
         Ok(Value::Nil)
     }
 
     fn calc_assignment(&mut self, var_name: &str, rvalue: &Expr) -> Result<Value> {
         let value = self.calc_expr(rvalue)?;
-
-        self.assign(var_name, value.clone())?;
-
+        self.current_env
+            .borrow_mut()
+            .assign(var_name, value.clone())?;
         Ok(value)
     }
 
-    fn assign(&mut self, name: &str, new_value: Value) -> Result<()> {
-        let old_value = self.envs.iter_mut().rev().find_map(|env| env.get_mut(name));
+    fn exec_block(&mut self, statements: &[Statement]) -> Result<Value> {
+        self.push_new_env(None);
 
-        match old_value {
-            Some(value) => *value = new_value,
-            None => return Err(runtime_error(RuntimeError::UndefinedVariable(name.into()))),
-        }
+        let result = self.exec_statements(statements);
 
-        Ok(())
+        self.pop_env()?;
+
+        result
     }
 
-    fn exec_block(&mut self, statements: &[Statement]) -> Result<Value> {
-        self.push_new_env();
-
+    fn exec_statements(&mut self, statements: &[Statement]) -> Result<Value> {
         for stmt in statements {
             self.exec_stmt(stmt)?;
         }
-
-        self.pop_env();
-
         Ok(Value::Nil)
     }
 
@@ -207,7 +212,7 @@ impl<'output> Interpreter<'output> {
     }
 
     fn declare_fun(&mut self, function: &FunctionDecl) -> Result<Value> {
-        self.get_curr_env_mut().define(
+        self.current_env.borrow_mut().define(
             &function.name,
             Value::Function(Function {
                 ast: function.clone(),
@@ -215,6 +220,39 @@ impl<'output> Interpreter<'output> {
         );
 
         Ok(Value::Nil)
+    }
+
+    fn call_fun(&mut self, callee: &Expr, args: &Vec<Expr>) -> Result<Value> {
+        // find function
+
+        let fun = match self.calc_expr(callee)? {
+            Value::Function(fun) => fun,
+            _ => return Err(runtime_error(RuntimeError::UndefinedFunction("".into()))),
+        };
+
+        // compute args and push them to a new stack frame
+
+        let computed_args = args
+            .iter()
+            .map(|expr| self.calc_expr(expr))
+            .collect::<Result<Vec<Value>>>()?;
+
+        self.push_new_env(Some(self.global_env.clone()));
+
+        for (value, name) in computed_args.iter().zip(fun.ast.params) {
+            self.current_env.borrow_mut().define(&name, value.clone());
+        }
+
+        // execute function
+
+        let result = self.exec_statements(&fun.ast.body);
+        self.pop_env()?;
+
+        match result {
+            Ok(value) => Ok(value),
+            Err(Error::EarlyReturn(value)) => Ok(value),
+            Err(err) => Err(err),
+        }
     }
 }
 

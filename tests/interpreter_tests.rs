@@ -547,3 +547,105 @@ fn test_for_loop_with_condition_only() {
 "#
     );
 }
+
+#[test]
+fn test_function_call_executes() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            fun f() {
+                print "inside function";
+            }
+            f();
+        "#
+        )
+        .unwrap(),
+        "inside function\n"
+    );
+}
+
+#[test]
+fn test_function_call_returns() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            fun f() {}
+            f();
+            print "after function";
+        "#
+        )
+        .unwrap(),
+        "after function\n"
+    );
+}
+
+#[test]
+fn test_assign_function_to_variable() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            fun f() {
+                print "inside function";
+            }
+            var a = f;
+            print a;
+        "#
+        )
+        .unwrap(),
+        "fun f\n"
+    );
+}
+
+#[test]
+fn test_function_call_via_variable() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            fun f() {
+                print "inside function";
+            }
+            var a = f;
+            a();
+        "#
+        )
+        .unwrap(),
+        "inside function\n"
+    );
+}
+
+#[test]
+fn test_function_access_global() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            var a = "hi from global scope";
+            fun f() {
+                print a;
+            }
+            f();
+        "#
+        )
+        .unwrap(),
+        "hi from global scope\n"
+    );
+}
+
+#[test]
+fn test_function_access_global_not_immediately_above() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+            var a = "hi from global scope";
+            fun f() {
+                print a;
+            }
+            {
+                var a = "hi from inner scope";
+                f();
+            }
+        "#
+        )
+        .unwrap(),
+        "hi from global scope\n"
+    );
+}

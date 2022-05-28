@@ -1,6 +1,10 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
-use crate::ast::FunctionDecl;
+use crate::{
+    ast::FunctionDecl,
+    error::{runtime_error, RuntimeError},
+    Result,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Value {
@@ -17,15 +21,19 @@ pub struct Function {
     pub ast: FunctionDecl,
 }
 
+pub type Env = Rc<RefCell<Environment>>;
+
 #[derive(Debug)]
 pub struct Environment {
     values: HashMap<String, Value>,
+    pub parent: Option<Env>,
 }
 
 impl Environment {
-    pub fn new() -> Self {
+    pub fn new(parent: Option<Env>) -> Self {
         Environment {
             values: HashMap::new(),
+            parent,
         }
     }
 
@@ -33,12 +41,22 @@ impl Environment {
         self.values.insert(name.into(), value);
     }
 
-    pub fn get(&self, name: &str) -> Option<&Value> {
-        self.values.get(name)
+    pub fn get(&self, name: &str) -> Option<Value> {
+        match self.values.get(name).cloned() {
+            Some(value) => Some(value),
+            None => self.parent.as_deref()?.borrow().get(name),
+        }
     }
 
-    pub fn get_mut(&mut self, name: &str) -> Option<&mut Value> {
-        self.values.get_mut(name)
+    pub fn assign(&mut self, name: &str, value: Value) -> Result<()> {
+        match self.values.get_mut(name) {
+            Some(dest) => *dest = value,
+            None => match self.parent {
+                Some(ref parent) => parent.borrow_mut().assign(name, value)?,
+                None => return Err(runtime_error(RuntimeError::UndefinedVariable(name.into()))),
+            },
+        }
+        Ok(())
     }
 }
 
