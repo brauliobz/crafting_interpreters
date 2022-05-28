@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
+use crate::ast::FunctionDecl;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Value {
     Nil,
@@ -7,6 +9,12 @@ pub enum Value {
     Number(f64),
     String(String),
     Object,
+    Function(Function),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Function {
+    pub ast: FunctionDecl,
 }
 
 #[derive(Debug)]
@@ -42,6 +50,7 @@ impl Display for Value {
             Value::Number(n) => write!(fmt, "{}", n),
             Value::String(s) => write!(fmt, "{}", s),
             Value::Object => todo!(),
+            Value::Function(function) => write!(fmt, "fun {}", &function.ast.name),
         }
     }
 }

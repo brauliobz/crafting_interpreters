@@ -1,8 +1,8 @@
 use std::io::Write;
 
 use crate::{
-    ast::{Expr, IfStatement, LiteralExpr, Statement, WhileStatement},
-    environment::{Environment, Value},
+    ast::{Expr, FunctionDecl, IfStatement, LiteralExpr, Statement, WhileStatement},
+    environment::{Environment, Function, Value},
     error::{ice, runtime_error, RuntimeError, ICE},
     scanner::TokenType,
     Result,
@@ -29,7 +29,7 @@ impl<'output> Interpreter<'output> {
             Statement::Block(statements) => self.exec_block(statements),
             Statement::If(if_statement) => self.if_stmt(if_statement),
             Statement::While(while_statement) => self.while_stmt(while_statement),
-            Statement::FunDecl(_) => todo!(),
+            Statement::FunDecl(function) => self.declare_fun(function),
         }
     }
 
@@ -202,6 +202,17 @@ impl<'output> Interpreter<'output> {
             self.exec_stmt(&while_statement.stmt)?;
             cond_value = self.calc_expr(&while_statement.cond)?;
         }
+
+        Ok(Value::Nil)
+    }
+
+    fn declare_fun(&mut self, function: &FunctionDecl) -> Result<Value> {
+        self.get_curr_env_mut().define(
+            &function.name,
+            Value::Function(Function {
+                ast: function.clone(),
+            }),
+        );
 
         Ok(Value::Nil)
     }
