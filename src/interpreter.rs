@@ -3,7 +3,7 @@ use std::{cell::RefCell, io::Write, rc::Rc};
 use crate::{
     ast::{Expr, FunctionDecl, IfStatement, LiteralExpr, Statement, WhileStatement},
     environment::{Env, Environment, Function, Value},
-    error::{ice, runtime_error, Error, RuntimeError, ICE},
+    error::{ice, runtime_error, ErrorOrEarlyReturn, RuntimeError, ICE},
     scanner::TokenType,
     Result,
 };
@@ -36,6 +36,7 @@ impl<'output> Interpreter<'output> {
             Statement::If(if_statement) => self.if_stmt(if_statement),
             Statement::While(while_statement) => self.while_stmt(while_statement),
             Statement::FunDecl(function) => self.declare_fun(function),
+            Statement::Return(expr) => self.return_stmt(expr.as_ref()),
         }
     }
 
@@ -222,6 +223,12 @@ impl<'output> Interpreter<'output> {
         Ok(Value::Nil)
     }
 
+    fn return_stmt(&mut self, expr: Option<&Expr>) -> Result<Value> {
+        let value = expr.map_or(Ok(Value::Nil), |expr: &Expr| self.calc_expr(expr))?;
+
+        Err(ErrorOrEarlyReturn::EarlyReturn(value))
+    }
+
     fn call_fun(&mut self, callee: &Expr, args: &Vec<Expr>) -> Result<Value> {
         // find function
 
@@ -250,7 +257,7 @@ impl<'output> Interpreter<'output> {
 
         match result {
             Ok(value) => Ok(value),
-            Err(Error::EarlyReturn(value)) => Ok(value),
+            Err(ErrorOrEarlyReturn::EarlyReturn(value)) => Ok(value),
             Err(err) => Err(err),
         }
     }

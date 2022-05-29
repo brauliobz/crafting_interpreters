@@ -14,6 +14,7 @@ pub enum Statement {
     If(IfStatement),
     While(WhileStatement),
     FunDecl(FunctionDecl),
+    Return(Option<Expr>),
 }
 
 #[derive(Debug, PartialEq, Clone)]

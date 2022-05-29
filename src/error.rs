@@ -1,17 +1,19 @@
 use thiserror::Error;
 
-use crate::scanner::TokenType;
+use crate::{environment::Value, scanner::TokenType};
 
 // TODO use a vector of errors since I would like to have some error recovering?
 
 #[derive(Debug, Error)]
-pub enum Error {
+pub enum ErrorOrEarlyReturn {
     #[error("Internal compiler error: {0}")]
     ICE(#[from] ICE),
     #[error("Compilation error: {0}")]
     CompilationError(#[from] CompilationError),
     #[error("Runtime error: {0}")]
     RuntimeError(#[from] RuntimeError),
+    #[error("Early return with value {0}")]
+    EarlyReturn(Value),
 }
 
 #[derive(Debug, Error)]
@@ -30,6 +32,8 @@ pub enum CompilationError {
     ExpectedNameAfterVar,
     #[error("Expected ';' after variable declaration.")]
     ExpectedSemicolonAfterVarDecl,
+    #[error("Return statement must be inside a function.")]
+    ReturnOutsideFunction,
 }
 
 /// Internal Compiler Error
@@ -49,24 +53,26 @@ pub enum RuntimeError {
     TypeMismatch(String, String),
     #[error("Undefined variable '{0}'")]
     UndefinedVariable(String),
+    #[error("Undefined function '{0}'")]
+    UndefinedFunction(String),
     #[error("Invalid operator '{0:?}' for values '{1}' and '{2}'")]
     InvalidOperator(TokenType, String, String),
 }
 
-pub fn ice(kind: ICE) -> Error {
-    Error::ICE(kind)
+pub fn ice(kind: ICE) -> ErrorOrEarlyReturn {
+    ErrorOrEarlyReturn::ICE(kind)
 }
 
-pub fn compilation_error(kind: CompilationError) -> Error {
-    Error::CompilationError(kind)
+pub fn compilation_error(kind: CompilationError) -> ErrorOrEarlyReturn {
+    ErrorOrEarlyReturn::CompilationError(kind)
 }
 
-pub fn runtime_error(kind: RuntimeError) -> Error {
-    Error::RuntimeError(kind)
+pub fn runtime_error(kind: RuntimeError) -> ErrorOrEarlyReturn {
+    ErrorOrEarlyReturn::RuntimeError(kind)
 }
 
-impl From<std::io::Error> for Error {
+impl From<std::io::Error> for ErrorOrEarlyReturn {
     fn from(io_error: std::io::Error) -> Self {
-        Error::ICE(ICE::IOError(io_error))
+        ErrorOrEarlyReturn::ICE(ICE::IOError(io_error))
     }
 }

@@ -303,7 +303,7 @@ impl Display for Token<'_> {
     }
 }
 
-impl <'a> From<&Token<'a>> for String {
+impl<'a> From<&Token<'a>> for String {
     fn from(t: &Token) -> Self {
         format!("{}", t)
     }
@@ -312,7 +312,7 @@ impl <'a> From<&Token<'a>> for String {
 #[cfg(test)]
 mod tests {
 
-    use crate::{error::Error, scanner::*};
+    use crate::{error::ErrorOrEarlyReturn, scanner::*};
     use std::collections::HashMap;
 
     #[test]
@@ -364,7 +364,7 @@ mod tests {
         assert!(result.is_err());
         assert!(matches!(
             result.unwrap_err(),
-            Error::CompilationError(CompilationError::UnterminatedString)
+            ErrorOrEarlyReturn::CompilationError(CompilationError::UnterminatedString)
         ));
     }
 

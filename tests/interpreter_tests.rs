@@ -1,6 +1,6 @@
 use rlox::{
     ast::Statement,
-    error::{Error, RuntimeError},
+    error::{ErrorOrEarlyReturn, RuntimeError},
     interpreter::Interpreter,
     parser, scanner, Result,
 };
@@ -94,7 +94,9 @@ fn test_var_redeclaration() {
 fn test_undefined_var_use() {
     assert!(matches!(
         exec_stmts("print a;"),
-        Err(Error::RuntimeError(RuntimeError::UndefinedVariable(_)))
+        Err(ErrorOrEarlyReturn::RuntimeError(
+            RuntimeError::UndefinedVariable(_)
+        ))
     ));
 }
 
@@ -115,7 +117,9 @@ fn test_assignment() {
 fn test_assignment_of_undefined_var() {
     assert!(matches!(
         exec_stmts("a = 10;"),
-        Err(Error::RuntimeError(RuntimeError::UndefinedVariable(_)))
+        Err(ErrorOrEarlyReturn::RuntimeError(
+            RuntimeError::UndefinedVariable(_)
+        ))
     ));
 }
 
@@ -647,5 +651,82 @@ fn test_function_access_global_not_immediately_above() {
         )
         .unwrap(),
         "hi from global scope\n"
+    );
+}
+
+#[test]
+fn test_recursion_without_return() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+                fun f(x) {
+                    print x;
+                    if (x > 0) {
+                        f(x - 1);
+                    }
+                }
+                f(3);
+            "#
+        )
+        .unwrap(),
+        "3
+2
+1
+0
+"
+    );
+}
+
+#[test]
+fn test_return_without_expr() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+                fun f() {
+                    print "Hello";
+                    return;
+                    print "World";
+                }
+                f();
+            "#
+        )
+        .unwrap(),
+        "Hello\n"
+    );
+}
+
+#[test]
+fn test_return_with_expr() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+                fun f() {
+                    return "Hello, World";
+                }
+                print f();
+            "#
+        )
+        .unwrap(),
+        "Hello, World\n"
+    );
+}
+
+#[test]
+fn test_recursion() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+                fun fib(n) {
+                    if (n >= 2) {
+                        return fib(n - 1) + fib(n - 2);
+                    } else {
+                        return n;
+                    }
+                }
+                print fib(10);
+            "#
+        )
+        .unwrap(),
+        "55\n"
     );
 }

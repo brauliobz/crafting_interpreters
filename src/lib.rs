@@ -7,8 +7,8 @@ pub mod scanner;
 pub mod scanner;
 
 pub mod ast;
-pub mod parser;
 pub mod environment;
 pub mod interpreter;
+pub mod parser;
 
-pub type Result<T> = std::result::Result<T, error::Error>;
+pub type Result<T> = std::result::Result<T, error::ErrorOrEarlyReturn>;

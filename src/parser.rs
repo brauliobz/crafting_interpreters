@@ -1,6 +1,6 @@
 use crate::{
     ast::*,
-    error::{compilation_error, ice, CompilationError, Error, ICE},
+    error::{compilation_error, ice, CompilationError, ErrorOrEarlyReturn, ICE},
     scanner::{Token, TokenType, TokenType::*},
     Result,
 };
@@ -8,6 +8,7 @@ use crate::{
 pub struct Parser<'tokens> {
     tokens: &'tokens Vec<Token<'tokens>>,
     next: usize,
+    inside_function: u32,
 }
 
 pub fn parse(tokens: &Vec<Token>) -> Result<Vec<Statement>> {
@@ -22,7 +23,11 @@ pub fn parse_expr(tokens: &Vec<Token>) -> Result<Expr> {
 
 impl<'tokens> Parser<'tokens> {
     fn new(tokens: &'tokens Vec<Token>) -> Parser<'tokens> {
-        Parser { tokens, next: 0 }
+        Parser {
+            tokens,
+            next: 0,
+            inside_function: 0,
+        }
     }
 
     fn matches(&mut self, token_type: TokenType) -> bool {
@@ -55,7 +60,11 @@ impl<'tokens> Parser<'tokens> {
         }
     }
 
-    fn consume_or_error(&mut self, token_type: TokenType, error: Error) -> Result<&Token> {
+    fn consume_or_error(
+        &mut self,
+        token_type: TokenType,
+        error: ErrorOrEarlyReturn,
+    ) -> Result<&Token> {
         if !self.matches(token_type) {
             Err(error)
         } else {
@@ -153,13 +162,22 @@ impl<'tokens> Parser<'tokens> {
         // function body
 
         self.consume(LeftBrace)?;
+        self.inside_function += 1;
 
         let mut body = vec![];
         while !self.check(RightBrace) && !self.is_at_end() {
-            body.push(self.declaration()?);
+            let maybe_stmt = self.declaration();
+            match maybe_stmt {
+                Ok(stmt) => body.push(stmt),
+                Err(err) => {
+                    self.inside_function -= 1;
+                    return Err(err);
+                }
+            }
         }
 
         self.consume(RightBrace)?;
+        self.inside_function -= 1;
 
         Ok(Statement::FunDecl(FunctionDecl { name, params, body }))
     }
@@ -175,6 +193,8 @@ impl<'tokens> Parser<'tokens> {
             self.while_stmt()
         } else if self.matches(For) {
             self.for_stmt()
+        } else if self.matches(Return) {
+            self.return_stmt()
         } else {
             self.expr_stmt()
         }
@@ -296,6 +316,22 @@ impl<'tokens> Parser<'tokens> {
         }));
 
         Ok(Statement::Block(gen_body))
+    }
+
+    fn return_stmt(&mut self) -> Result<Statement> {
+        let expr = if self.check(Semicolon) {
+            None
+        } else {
+            Some(self.expr()?)
+        };
+
+        self.consume(Semicolon)?;
+
+        if self.inside_function > 0 {
+            Ok(Statement::Return(expr))
+        } else {
+            Err(compilation_error(CompilationError::ReturnOutsideFunction))
+        }
     }
 
     fn expr(&mut self) -> Result<Expr> {

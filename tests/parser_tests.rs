@@ -1,5 +1,6 @@
 use rlox::{
     ast::*,
+    error::{CompilationError, ErrorOrEarlyReturn},
     parser,
     scanner::{self, TokenType::*},
     Result,
@@ -638,5 +639,97 @@ fn test_function_decl_with_too_many_params() {
             "
         ),
         Err(_)
+    ));
+}
+
+#[test]
+fn test_return_without_expression() {
+    assert_eq!(
+        parse(
+            "
+                fun f() {
+                    return;
+                }
+            "
+        )
+        .unwrap(),
+        vec![Statement::FunDecl(FunctionDecl {
+            name: "f".into(),
+            params: vec![],
+            body: vec![Statement::Return(None)]
+        })]
+    );
+}
+
+#[test]
+fn test_return_with_expression() {
+    assert_eq!(
+        parse(
+            "
+                fun f() {
+                    return 10 + 10;
+                }
+            "
+        )
+        .unwrap(),
+        vec![Statement::FunDecl(FunctionDecl {
+            name: "f".into(),
+            params: vec![],
+            body: vec![Statement::Return(Some(Expr::Binary(BinaryExpr {
+                left: Box::new(Expr::Literal(LiteralExpr::Number(10.0))),
+                op: Plus,
+                right: Box::new(Expr::Literal(LiteralExpr::Number(10.0))),
+            })))]
+        })]
+    );
+}
+
+#[test]
+fn test_return_outside_function() {
+    assert!(matches!(
+        parse(
+            "
+                if (true) {
+                    return 10;
+                }
+            "
+        ),
+        Err(ErrorOrEarlyReturn::CompilationError(
+            CompilationError::ReturnOutsideFunction
+        ))
+    ));
+}
+
+#[test]
+fn test_return_inside_outer_function() {
+    assert!(matches!(
+        parse(
+            "
+                fun f() {
+                    fun g() { }
+                    return 10;
+                }
+            "
+        ),
+        Ok(_)
+    ));
+}
+
+#[test]
+fn test_return_after_functions() {
+    assert!(matches!(
+        parse(
+            "
+                fun f() {
+                    fun g() {
+
+                    }
+                }
+                return 10;
+            "
+        ),
+        Err(ErrorOrEarlyReturn::CompilationError(
+            CompilationError::ReturnOutsideFunction
+        ))
     ));
 }
