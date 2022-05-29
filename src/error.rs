@@ -57,6 +57,8 @@ pub enum RuntimeError {
     UndefinedFunction(String),
     #[error("Invalid operator '{0:?}' for values '{1}' and '{2}'")]
     InvalidOperator(TokenType, String, String),
+    #[error("Expected {0} arguments in call for {1}, but got {2}.")]
+    NumberOfArgumentsMismatch(usize, String, usize),
 }
 
 pub fn ice(kind: ICE) -> ErrorOrEarlyReturn {

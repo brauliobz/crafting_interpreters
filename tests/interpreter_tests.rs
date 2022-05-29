@@ -730,3 +730,19 @@ fn test_recursion() {
         "55\n"
     );
 }
+
+#[test]
+fn test_call_with_wrong_number_of_parameters() {
+    assert!(matches!(
+        exec_stmts(
+            "
+                fun f(a) { }
+                f(1, 2);
+            "
+        ),
+        Err(ErrorOrEarlyReturn::RuntimeError(
+            RuntimeError::NumberOfArgumentsMismatch(1, _, 2)
+        ))
+    ));
+}
+

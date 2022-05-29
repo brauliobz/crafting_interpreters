@@ -237,6 +237,14 @@ impl<'output> Interpreter<'output> {
             _ => return Err(runtime_error(RuntimeError::UndefinedFunction("".into()))),
         };
 
+        if args.len() != fun.ast.params.len() {
+            return Err(runtime_error(RuntimeError::NumberOfArgumentsMismatch(
+                fun.ast.params.len(),
+                fun.ast.name.clone(),
+                args.len(),
+            )));
+        }
+
         // compute args and push them to a new stack frame
 
         let computed_args = args
