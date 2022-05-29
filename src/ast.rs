@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::scanner::TokenType;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -13,7 +15,7 @@ pub enum Statement {
     Block(Vec<Statement>),
     If(IfStatement),
     While(WhileStatement),
-    FunDecl(FunctionDecl),
+    FunDecl(Rc<FunctionDecl>),
     Return(Option<Expr>),
 }
 

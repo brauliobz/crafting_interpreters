@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use rlox::{
     ast::*,
     error::{CompilationError, ErrorOrEarlyReturn},
@@ -536,11 +538,11 @@ fn test_call_with_too_many_arguments() {
 fn test_function_declaration_without_params_and_empty_body() {
     assert_eq!(
         parse("fun f() {}").unwrap(),
-        vec![Statement::FunDecl(FunctionDecl {
+        vec![Statement::FunDecl(Rc::new(FunctionDecl {
             name: "f".into(),
             params: vec![],
             body: vec![]
-        })]
+        }))]
     );
 }
 
@@ -548,14 +550,14 @@ fn test_function_declaration_without_params_and_empty_body() {
 fn test_function_declaration_with_body() {
     assert_eq!(
         parse("fun f() { var a = 1; }").unwrap(),
-        vec![Statement::FunDecl(FunctionDecl {
+        vec![Statement::FunDecl(Rc::new(FunctionDecl {
             name: "f".into(),
             params: vec![],
             body: vec![Statement::VariableDecl(
                 "a".into(),
                 Some(Expr::Literal(LiteralExpr::Number(1.0)))
             )]
-        })]
+        }))]
     );
 }
 
@@ -583,11 +585,11 @@ fn test_function_decl_without_params() {
 fn test_function_decl_with_one_param() {
     assert_eq!(
         parse("fun f(x) {}").unwrap(),
-        vec![Statement::FunDecl(FunctionDecl {
+        vec![Statement::FunDecl(Rc::new(FunctionDecl {
             name: "f".into(),
             params: vec!["x".into()],
             body: vec![]
-        })]
+        }))]
     );
 }
 
@@ -595,11 +597,11 @@ fn test_function_decl_with_one_param() {
 fn test_function_decl_with_more_than_one_param() {
     assert_eq!(
         parse("fun f(x, y) {}").unwrap(),
-        vec![Statement::FunDecl(FunctionDecl {
+        vec![Statement::FunDecl(Rc::new(FunctionDecl {
             name: "f".into(),
             params: vec!["x".into(), "y".into()],
             body: vec![]
-        })]
+        }))]
     );
 }
 
@@ -653,11 +655,11 @@ fn test_return_without_expression() {
             "
         )
         .unwrap(),
-        vec![Statement::FunDecl(FunctionDecl {
+        vec![Statement::FunDecl(Rc::new(FunctionDecl {
             name: "f".into(),
             params: vec![],
             body: vec![Statement::Return(None)]
-        })]
+        }))]
     );
 }
 
@@ -672,7 +674,7 @@ fn test_return_with_expression() {
             "
         )
         .unwrap(),
-        vec![Statement::FunDecl(FunctionDecl {
+        vec![Statement::FunDecl(Rc::new(FunctionDecl {
             name: "f".into(),
             params: vec![],
             body: vec![Statement::Return(Some(Expr::Binary(BinaryExpr {
@@ -680,7 +682,7 @@ fn test_return_with_expression() {
                 op: Plus,
                 right: Box::new(Expr::Literal(LiteralExpr::Number(10.0))),
             })))]
-        })]
+        }))]
     );
 }
 

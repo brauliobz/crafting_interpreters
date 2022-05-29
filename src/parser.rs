@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     ast::*,
     error::{compilation_error, ice, CompilationError, ErrorOrEarlyReturn, ICE},
@@ -179,7 +181,11 @@ impl<'tokens> Parser<'tokens> {
         self.consume(RightBrace)?;
         self.inside_function -= 1;
 
-        Ok(Statement::FunDecl(FunctionDecl { name, params, body }))
+        Ok(Statement::FunDecl(Rc::new(FunctionDecl {
+            name,
+            params,
+            body,
+        })))
     }
 
     fn statement(&mut self) -> Result<Statement> {

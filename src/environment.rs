@@ -18,7 +18,7 @@ pub enum Value {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Function {
-    pub ast: FunctionDecl,
+    pub ast: Rc<FunctionDecl>,
 }
 
 pub type Env = Rc<RefCell<Environment>>;
