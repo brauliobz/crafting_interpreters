@@ -14,11 +14,18 @@ pub enum Value {
     String(String),
     Object,
     Function(Function),
+    NativeFunction(NativeFunction),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Function {
     pub ast: Rc<FunctionDecl>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct NativeFunction {
+    pub name: &'static str,
+    pub exec: fn(Env) -> Result<Value>,
 }
 
 pub type Env = Rc<RefCell<Environment>>;
@@ -69,6 +76,7 @@ impl Display for Value {
             Value::String(s) => write!(fmt, "{}", s),
             Value::Object => todo!(),
             Value::Function(function) => write!(fmt, "fun {}", &function.ast.name),
+            Value::NativeFunction(fun) => write!(fmt, "native fun {}", fun.name),
         }
     }
 }

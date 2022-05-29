@@ -47,6 +47,8 @@ pub enum ICE {
 
 #[derive(Debug, Error)]
 pub enum RuntimeError {
+    #[error("{0}")]
+    GenericError(String),
     #[error("Division by zero")]
     DivisionByZero,
     #[error("Type mismatch. Expected '{0}', got '{1}'")]

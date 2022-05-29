@@ -1,8 +1,13 @@
-use std::{cell::RefCell, io::Write, rc::Rc};
+use std::{
+    cell::RefCell,
+    io::Write,
+    rc::Rc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::{
     ast::{Expr, FunctionDecl, IfStatement, LiteralExpr, Statement, WhileStatement},
-    environment::{Env, Environment, Function, Value},
+    environment::{Env, Environment, Function, NativeFunction, Value},
     error::{ice, runtime_error, ErrorOrEarlyReturn, RuntimeError, ICE},
     scanner::TokenType,
     Result,
@@ -20,6 +25,8 @@ pub struct Interpreter<'stdout> {
 impl<'output> Interpreter<'output> {
     pub fn new(stdout: &'output mut dyn Write) -> Self {
         let global_env = Rc::new(RefCell::new(Environment::new(None)));
+
+        Self::define_native_functions(global_env.clone());
 
         Interpreter {
             current_env: global_env.clone(),
@@ -54,7 +61,24 @@ impl<'output> Interpreter<'output> {
         }
     }
 
-    pub fn print_stmt(&mut self, expr: &Expr) -> Result<Value> {
+    fn define_native_functions(env: Env) {
+        env.borrow_mut().define(
+            "clock",
+            Value::NativeFunction(NativeFunction {
+                name: "clock",
+                exec: |_env| match SystemTime::now().duration_since(UNIX_EPOCH) {
+                    Ok(duration) => Ok(Value::Number(duration.as_millis() as f64 / 1000.0)),
+                    Err(_) => {
+                        return Err(runtime_error(RuntimeError::GenericError(
+                            "Time went backwards when calling native function `clock`.".into(),
+                        )))
+                    }
+                },
+            }),
+        );
+    }
+
+    fn print_stmt(&mut self, expr: &Expr) -> Result<Value> {
         let value = self.calc_expr(expr)?;
         let output = format!("{}\n", value);
         self.stdout.write_all(output.as_bytes())?;
@@ -236,13 +260,20 @@ impl<'output> Interpreter<'output> {
             return Err(runtime_error(RuntimeError::StackOverflow));
         }
 
-        // find function
+        let calculated_fun = self.calc_expr(callee)?;
+        match calculated_fun {
+            Value::Function(fun) => self.call_user_defined_function(&fun, args),
+            Value::NativeFunction(fun) => self.call_native_function(&fun),
+            _ => {
+                return Err(runtime_error(RuntimeError::UndefinedFunction(format!(
+                    "{}",
+                    calculated_fun
+                ))))
+            }
+        }
+    }
 
-        let fun = match self.calc_expr(callee)? {
-            Value::Function(fun) => fun,
-            _ => return Err(runtime_error(RuntimeError::UndefinedFunction("".into()))),
-        };
-
+    fn call_user_defined_function(&mut self, fun: &Function, args: &Vec<Expr>) -> Result<Value> {
         if args.len() != fun.ast.params.len() {
             return Err(runtime_error(RuntimeError::NumberOfArgumentsMismatch(
                 fun.ast.params.len(),
@@ -274,6 +305,10 @@ impl<'output> Interpreter<'output> {
             Err(ErrorOrEarlyReturn::EarlyReturn(value)) => Ok(value),
             Err(err) => Err(err),
         }
+    }
+
+    fn call_native_function(&self, fun: &NativeFunction) -> Result<Value> {
+        (fun.exec)(self.current_env.clone())
     }
 }
 

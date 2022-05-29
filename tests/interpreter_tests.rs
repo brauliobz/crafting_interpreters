@@ -762,3 +762,13 @@ fn test_stack_overflow() {
         ))
     ));
 }
+
+#[test]
+fn test_native_function_call() {
+    assert!(exec_stmts(" print clock(); ")
+        .unwrap()
+        .trim()
+        .parse::<f64>()
+        .is_ok());
+}
+
