@@ -746,3 +746,19 @@ fn test_call_with_wrong_number_of_parameters() {
     ));
 }
 
+#[test]
+fn test_stack_overflow() {
+    assert!(matches!(
+        exec_stmts(
+            "
+                fun f() {
+                    f();
+                }
+                f();
+            "
+        ),
+        Err(ErrorOrEarlyReturn::RuntimeError(
+            RuntimeError::StackOverflow
+        ))
+    ));
+}

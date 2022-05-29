@@ -59,6 +59,8 @@ pub enum RuntimeError {
     InvalidOperator(TokenType, String, String),
     #[error("Expected {0} arguments in call for {1}, but got {2}.")]
     NumberOfArgumentsMismatch(usize, String, usize),
+    #[error("Stack overflow")]
+    StackOverflow,
 }
 
 pub fn ice(kind: ICE) -> ErrorOrEarlyReturn {

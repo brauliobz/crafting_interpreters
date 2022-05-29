@@ -8,6 +8,8 @@ use crate::{
     Result,
 };
 
+const MAX_STACK_SIZE: usize = 512;
+
 pub struct Interpreter<'stdout> {
     stack: Vec<Env>,
     current_env: Env,
@@ -230,6 +232,10 @@ impl<'output> Interpreter<'output> {
     }
 
     fn call_fun(&mut self, callee: &Expr, args: &Vec<Expr>) -> Result<Value> {
+        if self.stack.len() > MAX_STACK_SIZE {
+            return Err(runtime_error(RuntimeError::StackOverflow));
+        }
+
         // find function
 
         let fun = match self.calc_expr(callee)? {
