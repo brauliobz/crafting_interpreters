@@ -488,17 +488,26 @@ impl<'tokens> Parser<'tokens> {
             )));
         }
 
-        while !self.check(RightParen) {
-            args.push(self.expr()?);
+        if !self.check(RightParen) {
+            loop {
+                args.push(self.expr()?);
 
-            if args.len() > 256 {
-                return Err(compilation_error(CompilationError::GenericError(
-                    "Can't have more than 256 arguments in a function call.".into(),
-                )));
-            }
+                if args.len() > 256 {
+                    return Err(compilation_error(CompilationError::GenericError(
+                        "Can't have more than 256 arguments in a function call.".into(),
+                    )));
+                }
 
-            if !self.matches(Comma) {
-                break;
+                if self.check(RightParen) {
+                    break;
+                } else if self.check(Comma) {
+                    self.consume(Comma)?;
+                    continue;
+                } else {
+                    return Err(compilation_error(CompilationError::GenericError(
+                        "Expected an expression or closing parenthesis, not a comma.".into(),
+                    )));
+                }
             }
         }
 

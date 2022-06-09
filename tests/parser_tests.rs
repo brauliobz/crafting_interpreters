@@ -474,27 +474,27 @@ fn test_call_after_call() {
 
 #[test]
 fn test_call_trailing_comma() {
-    assert!(matches!(parse("f(a,)"), Err(_)));
+    assert!(matches!(parse("f(a,);"), Err(_)));
 }
 
 #[test]
 fn test_call_expression_expected() {
-    assert!(matches!(parse("f(, a)"), Err(_)));
+    assert!(matches!(parse("f(, a);"), Err(_)));
 }
 
 #[test]
 fn test_call_without_closing_parenthesis() {
-    assert!(matches!(parse("f("), Err(_)))
+    assert!(matches!(parse("f(;"), Err(_)))
 }
 
 #[test]
 fn test_call_without_closing_parenthesis_after_arg() {
-    assert!(matches!(parse("f(a"), Err(_)))
+    assert!(matches!(parse("f(a;"), Err(_)))
 }
 
 #[test]
 fn test_call_without_closing_parenthesis_after_args() {
-    assert!(matches!(parse("f(a, b, c"), Err(_)))
+    assert!(matches!(parse("f(a, b, c;"), Err(_)))
 }
 
 #[test]
