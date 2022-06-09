@@ -772,3 +772,72 @@ fn test_native_function_call() {
         .is_ok());
 }
 
+#[test]
+fn test_simple_closure() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+                fun f() {
+                    var i = 0;
+                    fun g() {
+                        i = i + 1;
+                        print i;
+                    }
+                    g();
+                }
+                f();
+            "#
+        )
+        .unwrap(),
+        "1\n"
+    );
+}
+
+#[test]
+fn test_returned_closure() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+                fun f() {
+                    var i = 0;
+                    fun g() {
+                        i = i + 1;
+                        print i;
+                    }
+                    return g;
+                }
+                var h = f();
+                h();
+                h();
+            "#
+        )
+        .unwrap(),
+        "1\n2\n"
+    );
+}
+
+#[test]
+fn test_returned_closure_different_envs() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+                fun f() {
+                    var i = 0;
+                    fun g() {
+                        i = i + 1;
+                        print i;
+                    }
+                    return g;
+                }
+                var h = f();
+                h();
+                h();
+                h = f();
+                h();
+                h();
+            "#
+        )
+        .unwrap(),
+        "1\n2\n1\n2\n"
+    );
+}

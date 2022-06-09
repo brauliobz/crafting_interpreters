@@ -17,9 +17,10 @@ pub enum Value {
     NativeFunction(NativeFunction),
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Function {
     pub ast: Rc<FunctionDecl>,
+    pub closure: Env,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -78,5 +79,11 @@ impl Display for Value {
             Value::Function(function) => write!(fmt, "fun {}", &function.ast.name),
             Value::NativeFunction(fun) => write!(fmt, "native fun {}", fun.name),
         }
+    }
+}
+
+impl PartialEq for Function {
+    fn eq(&self, other: &Self) -> bool {
+        self.ast == other.ast && self.closure.as_ptr() == other.closure.as_ptr()
     }
 }

@@ -243,6 +243,7 @@ impl<'output> Interpreter<'output> {
             &function.name,
             Value::Function(Function {
                 ast: function.clone(),
+                closure: self.current_env.clone(),
             }),
         );
 
@@ -289,7 +290,7 @@ impl<'output> Interpreter<'output> {
             .map(|expr| self.calc_expr(expr))
             .collect::<Result<Vec<Value>>>()?;
 
-        self.push_new_env(Some(self.global_env.clone()));
+        self.push_new_env(Some(fun.closure.clone()));
 
         for (value, name) in computed_args.iter().zip(&fun.ast.params) {
             self.current_env.borrow_mut().define(name, value.clone());
