@@ -68,11 +68,9 @@ impl<'output> Interpreter<'output> {
                 name: "clock",
                 exec: |_env| match SystemTime::now().duration_since(UNIX_EPOCH) {
                     Ok(duration) => Ok(Value::Number(duration.as_millis() as f64 / 1000.0)),
-                    Err(_) => {
-                        return Err(runtime_error(RuntimeError::GenericError(
-                            "Time went backwards when calling native function `clock`.".into(),
-                        )))
-                    }
+                    Err(_) => Err(runtime_error(RuntimeError::GenericError(
+                        "Time went backwards when calling native function `clock`.".into(),
+                    ))),
                 },
             }),
         );
