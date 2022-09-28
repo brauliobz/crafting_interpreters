@@ -52,7 +52,7 @@ impl<'output> Interpreter<'output> {
     pub fn calc_expr(&mut self, expr: &Expr) -> Result<Value> {
         match expr {
             Expr::Literal(lit) => Ok(calc_lit(lit)),
-            Expr::Identifier(id) => self.calc_identifier(id),
+            Expr::Identifier(id, resolvingDepth) => self.calc_identifier(id),
             Expr::Unary(unary) => self.calc_unary(unary.op, unary.expr.as_ref()),
             Expr::Binary(bin) => self.calc_binary(bin.left.as_ref(), bin.op, bin.right.as_ref()),
             Expr::Grouping(expr) => self.calc_expr(expr.as_ref()),
@@ -263,12 +263,10 @@ impl<'output> Interpreter<'output> {
         match calculated_fun {
             Value::Function(fun) => self.call_user_defined_function(&fun, args),
             Value::NativeFunction(fun) => self.call_native_function(&fun),
-            _ => {
-                return Err(runtime_error(RuntimeError::UndefinedFunction(format!(
-                    "{}",
-                    calculated_fun
-                ))))
-            }
+            _ => Err(runtime_error(RuntimeError::UndefinedFunction(format!(
+                "{}",
+                calculated_fun
+            )))),
         }
     }
 

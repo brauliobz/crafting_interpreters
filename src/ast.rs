@@ -4,7 +4,7 @@ use crate::scanner::TokenType;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Program {
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -39,9 +39,11 @@ pub struct FunctionDecl {
     pub body: Vec<Statement>,
 }
 
+pub type ResolvingDepth = u8;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expr {
-    Identifier(String),
+    Identifier(String, ResolvingDepth),
     Literal(LiteralExpr),
     Unary(UnaryExpr),
     Binary(BinaryExpr),

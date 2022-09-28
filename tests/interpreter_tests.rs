@@ -841,3 +841,25 @@ fn test_returned_closure_different_envs() {
         "1\n2\n1\n2\n"
     );
 }
+
+#[test]
+fn test_closure_scope_is_kept_intact() {
+    assert_eq!(
+        exec_stmts(
+            r#"
+                var a = "global";
+                {
+                    fun showA() {
+                        print a;
+                    }
+
+                    showA();
+                    var a = "local";
+                    showA();
+                }
+            "#
+        )
+        .unwrap(),
+        "global\nglobal\n"
+    );
+}

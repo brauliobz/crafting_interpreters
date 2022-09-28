@@ -349,7 +349,7 @@ impl<'tokens> Parser<'tokens> {
 
         if self.matches(Equal) {
             match expr {
-                Expr::Identifier(ref name) => {
+                Expr::Identifier(ref name, _) => {
                     let rvalue = self.assignment_expr()?;
                     return Ok(Expr::Assignment(name.clone(), Box::new(rvalue)));
                 }
@@ -540,7 +540,7 @@ impl<'tokens> Parser<'tokens> {
                 ))),
             }
         } else if self.matches(Identifier) {
-            Ok(Expr::Identifier(self.previous()?.lexeme.into()))
+            Ok(Expr::Identifier(self.previous()?.lexeme.into(), 0))
         } else if self.matches(LeftParen) {
             let expr = self.assignment_expr()?;
             self.consume(RightParen)?;

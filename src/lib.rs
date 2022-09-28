@@ -10,5 +10,6 @@ pub mod ast;
 pub mod environment;
 pub mod interpreter;
 pub mod parser;
+pub mod resolver;
 
 pub type Result<T> = std::result::Result<T, error::ErrorOrEarlyReturn>;
