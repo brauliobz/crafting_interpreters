@@ -52,11 +52,13 @@ impl<'output> Interpreter<'output> {
     pub fn calc_expr(&mut self, expr: &Expr) -> Result<Value> {
         match expr {
             Expr::Literal(lit) => Ok(calc_lit(lit)),
-            Expr::Identifier(id, resolvingDepth) => self.calc_identifier(id),
+            Expr::Identifier(id, resolving_depth) => self.calc_identifier(id, *resolving_depth),
             Expr::Unary(unary) => self.calc_unary(unary.op, unary.expr.as_ref()),
             Expr::Binary(bin) => self.calc_binary(bin.left.as_ref(), bin.op, bin.right.as_ref()),
             Expr::Grouping(expr) => self.calc_expr(expr.as_ref()),
-            Expr::Assignment(var_name, rvalue) => self.calc_assignment(var_name, rvalue),
+            Expr::Assignment(var_name, resolving_depth, rvalue) => {
+                self.calc_assignment(var_name, *resolving_depth, rvalue)
+            }
             Expr::Call(call) => self.call_fun(&call.callee, &call.args),
         }
     }
@@ -102,10 +104,10 @@ impl<'output> Interpreter<'output> {
         Ok(())
     }
 
-    fn calc_identifier(&mut self, id: &str) -> Result<Value> {
+    fn calc_identifier(&mut self, id: &str, depth: Option<u8>) -> Result<Value> {
         self.current_env
             .borrow()
-            .get(id)
+            .get(id, depth.unwrap()) // TODO ICE if there is no depth info
             .ok_or_else(|| runtime_error(RuntimeError::UndefinedVariable(id.into())))
     }
 
@@ -188,11 +190,16 @@ impl<'output> Interpreter<'output> {
         Ok(Value::Nil)
     }
 
-    fn calc_assignment(&mut self, var_name: &str, rvalue: &Expr) -> Result<Value> {
+    fn calc_assignment(
+        &mut self,
+        var_name: &str,
+        resolving_depth: Option<u8>,
+        rvalue: &Expr,
+    ) -> Result<Value> {
         let value = self.calc_expr(rvalue)?;
         self.current_env
             .borrow_mut()
-            .assign(var_name, value.clone())?;
+            .assign(var_name, value.clone(), resolving_depth.unwrap())?; // TODO ICE when depth is none
         Ok(value)
     }
 

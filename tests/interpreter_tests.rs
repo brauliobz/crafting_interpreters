@@ -1,8 +1,8 @@
 use rlox::{
-    ast::Statement,
+    ast::{Program, Statement},
     error::{ErrorOrEarlyReturn, RuntimeError},
     interpreter::Interpreter,
-    parser, scanner, Result,
+    parser, resolver, scanner, Result,
 };
 
 fn parse_stmts(src: &str) -> Result<Vec<Statement>> {
@@ -12,11 +12,15 @@ fn parse_stmts(src: &str) -> Result<Vec<Statement>> {
 
 /// executes the program and returns the generated output
 fn exec_stmts(src: &str) -> Result<String> {
-    let statements = parse_stmts(src)?;
+    let mut program = Program {
+        statements: parse_stmts(src)?,
+    };
+    resolver::Resolver::new().resolve(&mut program);
+    println!("{:?}", &program);
     let mut out = Vec::new();
     let mut int = Interpreter::new(&mut out);
 
-    for stmt in statements {
+    for stmt in program.statements {
         int.exec_stmt(&stmt)?;
     }
 

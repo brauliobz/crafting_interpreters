@@ -49,20 +49,25 @@ impl Environment {
         self.values.insert(name.into(), value);
     }
 
-    pub fn get(&self, name: &str) -> Option<Value> {
-        match self.values.get(name).cloned() {
-            Some(value) => Some(value),
-            None => self.parent.as_deref()?.borrow().get(name),
+    pub fn get(&self, name: &str, depth: u8) -> Option<Value> {
+        match (depth, self.values.get(name).cloned()) {
+            (0, maybe_value) => maybe_value,
+            (_, _) => self.parent.as_deref()?.borrow().get(name, depth - 1),
         }
     }
 
-    pub fn assign(&mut self, name: &str, value: Value) -> Result<()> {
-        match self.values.get_mut(name) {
-            Some(dest) => *dest = value,
-            None => match self.parent {
-                Some(ref parent) => parent.borrow_mut().assign(name, value)?,
+    pub fn assign(&mut self, name: &str, value: Value, depth: u8) -> Result<()> {
+        if depth == 0 {
+            match self.values.get_mut(name) {
+                Some(dest) => *dest = value,
                 None => return Err(runtime_error(RuntimeError::UndefinedVariable(name.into()))),
-            },
+            }
+        } else {
+            match self.parent {
+                Some(ref parent) => parent.borrow_mut().assign(name, value, depth - 1)?,
+                // TODO internal error, too much depth
+                None => return Err(runtime_error(RuntimeError::UndefinedVariable(name.into()))),
+            }
         }
         Ok(())
     }

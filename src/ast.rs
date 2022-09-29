@@ -39,7 +39,7 @@ pub struct FunctionDecl {
     pub body: Vec<Statement>,
 }
 
-pub type ResolvingDepth = u8;
+pub type ResolvingDepth = Option<u8>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expr {
@@ -48,7 +48,7 @@ pub enum Expr {
     Unary(UnaryExpr),
     Binary(BinaryExpr),
     Grouping(Box<Expr>),
-    Assignment(String, Box<Expr>),
+    Assignment(String, ResolvingDepth, Box<Expr>),
     Call(CallExpr),
 }
 

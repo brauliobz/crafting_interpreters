@@ -66,6 +66,7 @@ fn test_assignment() {
         parse("a = 10;").unwrap(),
         vec![Statement::Expr(Expr::Assignment(
             "a".into(),
+            None,
             Box::new(Expr::Literal(LiteralExpr::Number(10.0)))
         ))]
     );
@@ -77,6 +78,7 @@ fn test_assignment_of_expression() {
         parse("a = 10 + 11;").unwrap(),
         vec![Statement::Expr(Expr::Assignment(
             "a".into(),
+            None,
             Box::new(Expr::Binary(BinaryExpr {
                 left: Box::new(Expr::Literal(LiteralExpr::Number(10.0))),
                 op: Plus,
@@ -104,6 +106,7 @@ fn test_nonempty_block() {
             Statement::VariableDecl("a".into(), Some(Expr::Literal(LiteralExpr::Number(10.0)))),
             Statement::Expr(Expr::Assignment(
                 "a".into(),
+                None,
                 Box::new(Expr::Literal(LiteralExpr::Number(1.0)))
             ))
         ])]
@@ -404,7 +407,7 @@ fn test_simplest_function_call() {
     assert_eq!(
         parse("f();").unwrap(),
         vec![Statement::Expr(Expr::Call(CallExpr {
-            callee: Box::new(Expr::Identifier("f".into(), 0)),
+            callee: Box::new(Expr::Identifier("f".into(), None)),
             args: vec![]
         }))]
     );
@@ -415,7 +418,7 @@ fn test_call_with_one_argument() {
     assert_eq!(
         parse("f(1);").unwrap(),
         vec![Statement::Expr(Expr::Call(CallExpr {
-            callee: Box::new(Expr::Identifier("f".into(), 0)),
+            callee: Box::new(Expr::Identifier("f".into(), None)),
             args: vec![Expr::Literal(LiteralExpr::Number(1.0))]
         }))]
     );
@@ -426,18 +429,18 @@ fn test_call_with_3_arguments() {
     assert_eq!(
         parse("f(1, 2 + a, 3 * b);").unwrap(),
         vec![Statement::Expr(Expr::Call(CallExpr {
-            callee: Box::new(Expr::Identifier("f".into(), 0)),
+            callee: Box::new(Expr::Identifier("f".into(), None)),
             args: vec![
                 Expr::Literal(LiteralExpr::Number(1.0)),
                 Expr::Binary(BinaryExpr {
                     left: Box::new(Expr::Literal(LiteralExpr::Number(2.0))),
                     op: Plus,
-                    right: Box::new(Expr::Identifier("a".into(), 0)),
+                    right: Box::new(Expr::Identifier("a".into(), None)),
                 }),
                 Expr::Binary(BinaryExpr {
                     left: Box::new(Expr::Literal(LiteralExpr::Number(3.0))),
                     op: Star,
-                    right: Box::new(Expr::Identifier("b".into(), 0)),
+                    right: Box::new(Expr::Identifier("b".into(), None)),
                 })
             ]
         }))]
@@ -450,7 +453,7 @@ fn test_call_with_nontrivial_callee() {
         parse("(f())();").unwrap(),
         vec![Statement::Expr(Expr::Call(CallExpr {
             callee: Box::new(Expr::Grouping(Box::new(Expr::Call(CallExpr {
-                callee: Box::new(Expr::Identifier("f".into(), 0)),
+                callee: Box::new(Expr::Identifier("f".into(), None)),
                 args: vec![],
             })))),
             args: vec![]
@@ -464,7 +467,7 @@ fn test_call_after_call() {
         parse("f()();").unwrap(),
         vec![Statement::Expr(Expr::Call(CallExpr {
             callee: Box::new(Expr::Call(CallExpr {
-                callee: Box::new(Expr::Identifier("f".into(), 0)),
+                callee: Box::new(Expr::Identifier("f".into(), None)),
                 args: vec![],
             })),
             args: vec![],
